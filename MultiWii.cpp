@@ -15,7 +15,6 @@ November  2013     V2.3
 #include "def.h"
 #include "types.h"
 #include "MultiWii.h"
-#include "Alarms.h"
 #include "EEPROM.h"
 #include "IMU.h"
 #include "Output.h"
@@ -151,7 +150,6 @@ uint16_t calibratingA = 0;  // the calibration is done in the main loop. Calibra
 uint16_t calibratingB = 0;  // baro calibration = get new ground pressure value
 uint16_t calibratingG;
 int16_t  magHold,headFreeModeHold; // [-180;+180]
-uint8_t  vbatMin = VBATNOMINAL;  // lowest battery voltage in 0.1V steps
 uint8_t  rcOptions[CHECKBOXITEMS];
 int32_t  AltHold; // in cm
 int16_t  sonarAlt;
@@ -400,31 +398,6 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
   }
   #endif // POWERMETER_HARD
 
-  #if defined(VBAT)
-  case 1:
-  {
-      static uint8_t ind = 0;
-      static uint16_t vvec[VBAT_SMOOTH], vsum;
-      uint16_t v = analogRead(V_BATPIN);
-      //debug[1] = v;
-      #if VBAT_SMOOTH == 1
-        analog.vbat = (v<<4) / conf.vbatscale; // result is Vbatt in 0.1V steps
-      #else
-        vsum += v;
-        vsum -= vvec[ind];
-        vvec[ind++] = v;
-        ind %= VBAT_SMOOTH;
-        #if VBAT_SMOOTH == 16
-          analog.vbat = vsum / conf.vbatscale; // result is Vbatt in 0.1V steps
-        #elif VBAT_SMOOTH < 16
-          analog.vbat = (vsum * (16/VBAT_SMOOTH)) / conf.vbatscale; // result is Vbatt in 0.1V steps
-        #else
-          analog.vbat = ((vsum /VBAT_SMOOTH) * 16) / conf.vbatscale; // result is Vbatt in 0.1V steps
-        #endif
-      #endif
-      break;
-  }
-  #endif // VBAT
   #if defined(RX_RSSI)
   case 2:
   {
@@ -536,9 +509,6 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
     #if defined(LCD_TELEMETRY) || defined(ARMEDTIMEWARNING) || defined(LOG_PERMANENT)
       armedTime += (uint32_t)cycleTime;
     #endif
-    #if defined(VBAT)
-      if ( (analog.vbat > NO_VBAT) && (analog.vbat < vbatMin) ) vbatMin = analog.vbat;
-    #endif
     #ifdef LCD_TELEMETRY
       #if BARO
         if ( (alt.EstAlt > BAROaltMax) ) BAROaltMax = alt.EstAlt;
@@ -607,7 +577,6 @@ void setup() {
     }
   #endif
   readEEPROM();                                 // load setting data from last used profile
-  blinkLED(2,40,global_conf.currentSet+1);          
   configureReceiver();
   #if defined (PILOTLAMP) 
     PL_INIT;
@@ -702,9 +671,6 @@ void go_arm() {
       f.ARMED = 1;
       headFreeModeHold = att.heading;
       magHold = att.heading;
-      #if defined(VBAT)
-        if (analog.vbat > NO_VBAT) vbatMin = analog.vbat;
-      #endif
       #ifdef LCD_TELEMETRY // reset some values when arming
         #if BARO
           BAROaltMax = alt.EstAlt;
@@ -724,7 +690,6 @@ void go_arm() {
       #endif
     }
   } else if(!f.ARMED) { 
-    blinkLED(2,255,1);
     alarmArray[8] = 1;
   }
 }
@@ -868,7 +833,6 @@ void loop () {
             global_conf.currentSet = i-1;
             writeGlobalSet(0);
             readEEPROM();
-            blinkLED(2,40,i);
             alarmArray[0] = i;
           }
         #endif

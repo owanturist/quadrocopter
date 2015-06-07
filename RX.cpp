@@ -5,7 +5,6 @@
 #include "Serial.h"
 #include "Protocol.h"
 #include "MultiWii.h"
-#include "Alarms.h"
 
 /**************************************************************************************/
 /***************             Global RX related variables           ********************/
@@ -818,12 +817,10 @@ void spekBind() {
   pinMode(SPEK_BIND_POWER,OUTPUT);
   
   while(1) {  //Do not return.  User presses reset button to return to normal. 
-    blinkLED(4,255,1);
     digitalWrite(SPEK_BIND_POWER,LOW); // Power off sat
     pinMode(SPEK_BIND_DATA, OUTPUT); 
     digitalWrite(SPEK_BIND_DATA,LOW); 
     delay(1000); 
-    blinkLED(4,255,1);
     
     digitalWrite(SPEK_BIND_POWER,HIGH); // Power on sat
     delay(10);

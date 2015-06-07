@@ -222,50 +222,6 @@
     #define FAILSAFE_DETECT_TRESHOLD  985
 
   /********************************************************************/
-  /****                             Buzzer                         ****/
-  /********************************************************************/
-    //#define BUZZER
-    //#define RCOPTIONSBEEP         // uncomment this if you want the buzzer to beep at any rcOptions change on channel Aux1 to Aux4
-    //#define ARMEDTIMEWARNING 330  // (*) Trigger an alarm after a certain time of being armed [s] to save you lipo (if your TX does not have a countdown)
-    //#define PILOTLAMP             //Uncomment if you are using a X-Arcraft Pilot Lamp
-
-  /********************************************************************/
-  /****           battery voltage monitoring                       ****/
-  /********************************************************************/
-    /* for V BAT monitoring
-       after the resistor divisor we should get [0V;5V]->[0;1023] on analog V_BATPIN
-       with R1=33k and R2=51k
-       vbat = [0;1023]*16/VBATSCALE
-       must be associated with #define BUZZER ! */
-    //#define VBAT              // uncomment this line to activate the vbat code
-    #define VBATSCALE       131 // (*) (**) change this value if readed Battery voltage is different than real voltage
-    #define VBATNOMINAL     126 // 12,6V full battery nominal voltage - only used for lcd.telemetry
-    #define VBATLEVEL_WARN1 107 // (*) (**) 10,7V
-    #define VBATLEVEL_WARN2  99 // (*) (**) 9.9V
-    #define VBATLEVEL_CRIT   93 // (*) (**) 9.3V - critical condition: if vbat ever goes below this value, permanent alarm is triggered
-    #define NO_VBAT          16 // Avoid beeping without any battery
-
-
-  /********************************************************************/
-  /****           powermeter (battery capacity monitoring)         ****/
-  /********************************************************************/
-
-    /* enable monitoring of the power consumption from battery (think of mAh)
-       allows to set alarm value in GUI or via LCD
-      Full description and howto here http://www.multiwii.com/wiki/index.php?title=Powermeter
-       Two options:
-       1 - hard: - (uses hardware sensor, after configuration gives very good results)
-       2 - soft: - (good results +-5% for plush and mystery ESCs @ 2S and 3S, not good with SuperSimple ESC)    */
-    //#define POWERMETER_SOFT
-    //#define POWERMETER_HARD
-    #define PSENSORNULL 510 /* (*) hard only: set to analogRead() value for zero current; for I=0A my sensor
-                                   gives 1/2 Vss; that is approx 2.49Volt; */
-    #define PINT2mA 132     /* (*) hard: one integer step on arduino analog translates to mA (example 4.9 / 37 * 1000) ;
-                                   soft: use fictional value, start with 100.
-                                   for hard and soft: larger PINT2mA will get you larger value for power (mAh equivalent) */
-
-
-  /********************************************************************/
   /****           baord naming                                     ****/
   /********************************************************************/
 

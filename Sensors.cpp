@@ -3,7 +3,6 @@
 #include "def.h"
 #include "types.h"
 #include "MultiWii.h"
-#include "Alarms.h"
 #include "EEPROM.h"
 #include "IMU.h"
 
@@ -334,7 +333,6 @@ void GYRO_Common() {
       #if defined(BUZZER)
         alarmArray[7] = 4;
       #else
-        blinkLED(10,15,1); //the delay causes to beep the buzzer really long 
       #endif
       }
     }
@@ -1694,7 +1692,6 @@ void i2c_srf08_change_addr(int8_t current, int8_t moveto) {
   i2c_writeReg(current, SRF08_REV_COMMAND, 0xAA);  delay(30);
   i2c_writeReg(current, SRF08_REV_COMMAND, 0xA5);  delay(30);
   i2c_writeReg(current, SRF08_REV_COMMAND, moveto);  delay(30); // now change i2c address
-  blinkLED(5,1,2);
   #if defined(BUZZER)
    alarmArray[7] = 2;
   #endif
