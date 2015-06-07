@@ -3,7 +3,6 @@
 #include "def.h"
 #include "types.h"
 #include "EEPROM.h"
-#include "LCD.h"
 #include "Output.h"
 #include "GPS.h"
 #include "MultiWii.h"

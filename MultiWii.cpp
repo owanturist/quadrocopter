@@ -18,7 +18,6 @@ November  2013     V2.3
 #include "Alarms.h"
 #include "EEPROM.h"
 #include "IMU.h"
-#include "LCD.h"
 #include "Output.h"
 #include "RX.h"
 #include "Sensors.h"
