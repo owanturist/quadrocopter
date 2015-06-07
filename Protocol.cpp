@@ -4,7 +4,6 @@
 #include "types.h"
 #include "EEPROM.h"
 #include "Output.h"
-#include "GPS.h"
 #include "MultiWii.h"
 #include "Serial.h"
 #include "Protocol.h"

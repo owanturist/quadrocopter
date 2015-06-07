@@ -22,7 +22,6 @@ November  2013     V2.3
 #include "RX.h"
 #include "Sensors.h"
 #include "Serial.h"
-#include "GPS.h"
 #include "Protocol.h"
 
 #include <avr/pgmspace.h>

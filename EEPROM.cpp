@@ -6,7 +6,6 @@
 #include "EEPROM.h"
 #include "MultiWii.h"
 #include "Alarms.h"
-#include "GPS.h"
 
 void LoadDefaults(void);
 
