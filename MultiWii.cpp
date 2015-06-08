@@ -1,11 +1,10 @@
 /*
-MultiWiiCopter by Alexandre Dubus
-www.multiwii.com
-November  2013     V2.3
- This program is free software: you can redistribute it and/or modify
- it under the terms of the GNU General Public License as published by
- the Free Software Foundation, either version 3 of the License, or
- any later version. see <http://www.gnu.org/licenses/>
+* TOC
+*
+* SETUP
+* GO ARM
+* GO DISARM
+* LOOP
 */
 
 #include <avr/io.h>
@@ -552,145 +551,83 @@ void annexCode() { // this code is excetuted at each loop and won't interfere wi
   }
 }
 
+// > SETUP
 void setup() {
-  #if !defined(GPS_PROMINI)
-    SerialOpen(0,SERIAL0_COM_SPEED);
-    #if defined(PROMICRO)
-      SerialOpen(1,SERIAL1_COM_SPEED);
-    #endif
-    #if defined(MEGA)
-      SerialOpen(1,SERIAL1_COM_SPEED);
-      SerialOpen(2,SERIAL2_COM_SPEED);
-      SerialOpen(3,SERIAL3_COM_SPEED);
-    #endif
-  #endif
-  LEDPIN_PINMODE;
-  POWERPIN_PINMODE;
-  BUZZERPIN_PINMODE;
-  STABLEPIN_PINMODE;
-  POWERPIN_OFF;
+  // LEDPIN_PINMODE;
+  // POWERPIN_PINMODE;
+  // BUZZERPIN_PINMODE;
+  // STABLEPIN_PINMODE;
+  // POWERPIN_OFF;
   initOutput();
   readGlobalSet();
+
   #ifndef NO_FLASH_CHECK
     #if defined(MEGA)
-      uint16_t i = 65000;                             // only first ~64K for mega board due to pgm_read_byte limitation
+      // only first ~64K for mega board due to
+      // pgm_read_byte limitation
+      uint16_t i = 65000;
     #else
       uint16_t i = 32000;
     #endif
+
     uint16_t flashsum = 0;
     uint8_t pbyt;
     while(i--) {
-      pbyt =  pgm_read_byte(i);        // calculate flash checksum
+      // calculate flash checksum
+      pbyt =  pgm_read_byte(i);
       flashsum += pbyt;
       flashsum ^= (pbyt<<8);
     }
   #endif
-  #ifdef MULTIPLE_CONFIGURATION_PROFILES
-    global_conf.currentSet=2;
-  #else
-    global_conf.currentSet=0;
-  #endif
-  while(1) {                                                    // check settings integrity
-  #ifndef NO_FLASH_CHECK
-    if(readEEPROM()) {                                          // check current setting integrity
-      if(flashsum != global_conf.flashsum) update_constants();  // update constants if firmware is changed and integrity is OK
-    }
-  #else
-    readEEPROM();                                               // check current setting integrity
-  #endif  
-    if(global_conf.currentSet == 0) break;                      // all checks is done
-    global_conf.currentSet--;                                   // next setting for check
+
+  global_conf.currentSet=0;
+
+  // check settings integrity
+  while(1) {
+    #ifndef NO_FLASH_CHECK
+      // check current setting integrity
+      if(readEEPROM()) {
+        // update constants if firmware is changed and integrity is OK
+        if(flashsum != global_conf.flashsum) update_constants();
+      }
+    #else
+      // check current setting integrity
+      readEEPROM();
+    #endif
+    // all checks is done
+    if(global_conf.currentSet == 0) break;
+    // next setting for check
+    global_conf.currentSet--;
   }
-  readGlobalSet();                              // reload global settings for get last profile number
+
+  // reload global settings for get last profile number
+  readGlobalSet();
+
   #ifndef NO_FLASH_CHECK
     if(flashsum != global_conf.flashsum) {
-      global_conf.flashsum = flashsum;          // new flash sum
-      writeGlobalSet(1);                        // update flash sum in global config
+      // new flash sum
+      global_conf.flashsum = flashsum;
+      // update flash sum in global config
+      writeGlobalSet(1);
     }
   #endif
-  readEEPROM();                                 // load setting data from last used profile
-  blinkLED(2,40,global_conf.currentSet+1);          
+
+  readEEPROM();  // load setting data from last used profile
   configureReceiver();
-  #if defined (PILOTLAMP) 
-    PL_INIT;
-  #endif
-  #if defined(OPENLRSv2MULTI)
-    initOpenLRS();
-  #endif
   initSensors();
-  #if defined(I2C_GPS) || defined(GPS_SERIAL) || defined(GPS_FROM_OSD)
-    GPS_set_pids();
-  #endif
+
   previousTime = micros();
-  #if defined(GIMBAL)
-   calibratingA = 512;
-  #endif
   calibratingG = 512;
-  calibratingB = 200;  // 10 seconds init_delay + 200 * 25 ms = 15 seconds before ground pressure settles
-  #if defined(POWERMETER)
-    for(uint8_t j=0; j<=PMOTOR_SUM; j++) pMeter[j]=0;
-  #endif
-  /************************************/
-  #if defined(GPS_SERIAL)
-    GPS_SerialInit();
-    for(uint8_t j=0;j<=5;j++){
-      GPS_NewData(); 
-      LEDPIN_ON
-      delay(20);
-      LEDPIN_OFF
-      delay(80);
-    }
-    if(!GPS_Present){
-      SerialEnd(GPS_SERIAL);
-      SerialOpen(0,SERIAL0_COM_SPEED);
-    }
-    #if !defined(GPS_PROMINI)
-      GPS_Present = 1;
-    #endif
-    GPS_Enable = GPS_Present;    
-  #endif
-  /************************************/
- 
-  #if defined(I2C_GPS) || defined(GPS_FROM_OSD)
-   GPS_Enable = 1;
-  #endif
-  
-  #if defined(LCD_ETPP) || defined(LCD_LCD03) || defined(OLED_I2C_128x64) || defined(OLED_DIGOLE) || defined(LCD_TELEMETRY_STEP)
-    initLCD();
-  #endif
-  #ifdef LCD_TELEMETRY_DEBUG
-    telemetry_auto = 1;
-  #endif
-  #ifdef LCD_CONF_DEBUG
-    configurationLoop();
-  #endif
-  #ifdef LANDING_LIGHTS_DDR
-    init_landing_lights();
-  #endif
-  #ifdef FASTER_ANALOG_READS
-    ADCSRA |= _BV(ADPS2) ; ADCSRA &= ~_BV(ADPS1); ADCSRA &= ~_BV(ADPS0); // this speeds up analogRead without loosing too much resolution: http://www.arduino.cc/cgi-bin/yabb2/YaBB.pl?num=1208715493/11
-  #endif
-  #if defined(LED_FLASHER)
-    init_led_flasher();
-    led_flasher_set_sequence(LED_FLASHER_SEQUENCE);
-  #endif
-  f.SMALL_ANGLES_25=1; // important for gyro only conf
-  #ifdef LOG_PERMANENT
-    // read last stored set
-    readPLog();
-    plog.lifetime += plog.armed_time / 1000000;
-    plog.start++;         // #powercycle/reset/initialize events
-    // dump plog data to terminal
-    #ifdef LOG_PERMANENT_SHOW_AT_STARTUP
-      dumpPLog(0);
-    #endif
-    plog.armed_time = 0;   // lifetime in seconds
-    //plog.running = 0;       // toggle on arm & disarm to monitor for clean shutdown vs. powercut
-  #endif
-  
+  // 10 seconds init_delay + 200 * 25 ms = 15
+  // seconds before ground pressure settles
+  calibratingB = 200;
+
+  f.SMALL_ANGLES_25 = 1; // important for gyro only conf
+
   debugmsg_append_str("initialization completed\n");
 }
 
+// > GO ARM
 void go_arm() {
   if(calibratingG == 0
   #if defined(ONLYARMWHENFLAT)
@@ -704,77 +641,53 @@ void go_arm() {
       f.ARMED = 1;
       headFreeModeHold = att.heading;
       magHold = att.heading;
-      #if defined(VBAT)
-        if (analog.vbat > NO_VBAT) vbatMin = analog.vbat;
-      #endif
-      #ifdef LCD_TELEMETRY // reset some values when arming
-        #if BARO
-          BAROaltMax = alt.EstAlt;
-        #endif
-        #if GPS
-          GPS_speedMax = 0;
-        #endif
-        #ifdef POWERMETER_HARD
-          powerValueMaxMAH = 0;
-        #endif
-      #endif
-      #ifdef LOG_PERMANENT
-        plog.arm++;           // #arm events
-        plog.running = 1;       // toggle on arm & disarm to monitor for clean shutdown vs. powercut
-        // write now.
-        writePLog();
-      #endif
     }
-  } else if(!f.ARMED) { 
-    blinkLED(2,255,1);
-    alarmArray[8] = 1;
-  }
-}
-void go_disarm() {
-  if (f.ARMED) {
-    f.ARMED = 0;
-    #ifdef LOG_PERMANENT
-      plog.disarm++;        // #disarm events
-      plog.armed_time = armedTime ;   // lifetime in seconds
-      if (failsafeEvents) plog.failsafe++;      // #acitve failsafe @ disarm
-      if (i2c_errors_count > 10) plog.i2c++;           // #i2c errs @ disarm
-      plog.running = 0;       // toggle @ arm & disarm to monitor for clean shutdown vs. powercut
-      // write now.
-      writePLog();
-    #endif
   }
 }
 
-// ******** Main Loop *********
+// > GO DISARM
+void go_disarm() {
+  if (f.ARMED) {
+    f.ARMED = 0;
+  }
+}
+
+// > LOOP
 void loop () {
-  static uint8_t rcDelayCommand; // this indicates the number of time (multiple of RC measurement at 50Hz) the sticks must be maintained to run or switch off motors
-  static uint8_t rcSticks;       // this hold sticks position for command combos
+  // this indicates the number of time
+  // (multiple of RC measurement at 50Hz)
+  // the sticks must be maintained to run or switch off motors
+  static uint8_t rcDelayCommand;
+
+  // this hold sticks position for command combos
+  static uint8_t rcSticks;
+
   uint8_t axis,i;
   int16_t error,errorAngle;
   int16_t delta;
   int16_t PTerm = 0,ITerm = 0,DTerm, PTermACC, ITermACC;
   static int16_t lastGyro[2] = {0,0};
   static int16_t errorAngleI[2] = {0,0};
-#if PID_CONTROLLER == 1
-  static int32_t errorGyroI_YAW;
-  static int16_t delta1[2],delta2[2];
-  static int16_t errorGyroI[2] = {0,0};
-#elif PID_CONTROLLER == 2
-  static int16_t delta1[3],delta2[3];
-  static int32_t errorGyroI[3] = {0,0,0};
-  static int16_t lastError[3] = {0,0,0};
-  int16_t deltaSum;
-  int16_t AngleRateTmp, RateError;
-#endif
+
+  #if PID_CONTROLLER == 1
+    static int32_t errorGyroI_YAW;
+    static int16_t delta1[2],delta2[2];
+    static int16_t errorGyroI[2] = {0,0};
+
+  #elif PID_CONTROLLER == 2
+    static int16_t delta1[3],delta2[3];
+    static int32_t errorGyroI[3] = {0,0,0};
+    static int16_t lastError[3] = {0,0,0};
+    int16_t deltaSum;
+    int16_t AngleRateTmp, RateError;
+  #endif
+
   static uint32_t rcTime  = 0;
   static int16_t initialThrottleHold;
   static uint32_t timestamp_fixated = 0;
   int16_t rc;
   int32_t prop = 0;
 
-  #if defined(SPEKTRUM)
-    if (spekFrameFlags == 0x01) readSpektrum();
-  #endif
   
   #if defined(OPENLRSv2MULTI) 
     Read_OpenLRS_RC();
