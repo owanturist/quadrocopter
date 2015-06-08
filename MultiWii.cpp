@@ -5,6 +5,7 @@
 * GO ARM
 * GO DISARM
 * LOOP
+* - sticks command handler
 */
 
 #include <avr/io.h>
@@ -558,6 +559,8 @@ void setup() {
   // BUZZERPIN_PINMODE;
   // STABLEPIN_PINMODE;
   // POWERPIN_OFF;
+
+  SerialOpen(0,SERIAL0_COM_SPEED);
   initOutput();
   readGlobalSet();
 
@@ -633,9 +636,6 @@ void go_arm() {
   #if defined(ONLYARMWHENFLAT)
     && f.ACC_CALIBRATED 
   #endif
-  #if defined(FAILSAFE)
-    && failsafeCnt < 2
-  #endif
     ) {
     if(!f.ARMED && !f.BARO_MODE) { // arm now!
       f.ARMED = 1;
@@ -688,61 +688,32 @@ void loop () {
   int16_t rc;
   int32_t prop = 0;
 
-  
-  #if defined(OPENLRSv2MULTI) 
-    Read_OpenLRS_RC();
-  #endif 
 
   if (currentTime > rcTime ) { // 50Hz
     rcTime = currentTime + 20000;
     computeRC();
-    // Failsafe routine - added by MIS
-    #if defined(FAILSAFE)
-      if ( failsafeCnt > (5*FAILSAFE_DELAY) && f.ARMED) {                  // Stabilize, and set Throttle to specified level
-        for(i=0; i<3; i++) rcData[i] = MIDRC;                               // after specified guard time after RC signal is lost (in 0.1sec)
-        rcData[THROTTLE] = conf.failsafe_throttle;
-        if (failsafeCnt > 5*(FAILSAFE_DELAY+FAILSAFE_OFF_DELAY)) {          // Turn OFF motors after specified Time (in 0.1sec)
-          go_disarm();     // This will prevent the copter to automatically rearm if failsafe shuts it down and prevents
-          f.OK_TO_ARM = 0; // to restart accidentely by just reconnect to the tx - you will have to switch off first to rearm
-        }
-        failsafeEvents++;
-      }
-      if ( failsafeCnt > (5*FAILSAFE_DELAY) && !f.ARMED) {  //Turn of "Ok To arm to prevent the motors from spinning after repowering the RX with low throttle and aux to arm
-          go_disarm();     // This will prevent the copter to automatically rearm if failsafe shuts it down and prevents
-          f.OK_TO_ARM = 0; // to restart accidentely by just reconnect to the tx - you will have to switch off first to rearm
-      }
-      failsafeCnt++;
-    #endif
-    // end of failsafe routine - next change is made with RcOptions setting
 
-    // ------------------ STICKS COMMAND HANDLER --------------------
+    // >> sticks command handler
     // checking sticks positions
     uint8_t stTmp = 0;
     for(i=0;i<4;i++) {
       stTmp >>= 2;
-      if(rcData[i] > MINCHECK) stTmp |= 0x80;      // check for MIN
-      if(rcData[i] < MAXCHECK) stTmp |= 0x40;      // check for MAX
+      if(rcData[i] > MINCHECK) stTmp |= 0x80;  // check for MIN
+      if(rcData[i] < MAXCHECK) stTmp |= 0x40;  // check for MAX
     }
     if(stTmp == rcSticks) {
       if(rcDelayCommand<250) rcDelayCommand++;
     } else rcDelayCommand = 0;
     rcSticks = stTmp;
-    
-    // perform actions    
-    if (rcData[THROTTLE] <= MINCHECK) {            // THROTTLE at minimum
-      #if !defined(FIXEDWING)
-        errorGyroI[ROLL] = 0; errorGyroI[PITCH] = 0;
-        #if PID_CONTROLLER == 1
-          errorGyroI_YAW = 0;
-        #elif PID_CONTROLLER == 2
-          errorGyroI[YAW] = 0;
-        #endif
-        errorAngleI[ROLL] = 0; errorAngleI[PITCH] = 0;
-      #endif
-      if (conf.activate[BOXARM] > 0) {             // Arming/Disarming via ARM BOX
-        if ( rcOptions[BOXARM] && f.OK_TO_ARM ) go_arm(); else if (f.ARMED) go_disarm();
+
+    // perform actions
+    if (rcData[THROTTLE] <= MINCHECK) {  // THROTTLE at minimum
+      if (conf.activate[BOXARM] > 0) {   // Arming/Disarming via ARM BOX
+        if ( rcOptions[BOXARM] && f.OK_TO_ARM )
+          go_arm(); else if (f.ARMED) go_disarm();
       }
     }
+
     if(rcDelayCommand == 20) {
       if(f.ARMED) {                   // actions during armed
         #ifdef ALLOW_ARM_DISARM_VIA_TX_YAW
