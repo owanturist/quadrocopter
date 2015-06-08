@@ -16,7 +16,7 @@ November  2013     V2.3
 #include "types.h"
 #include "MultiWii.h"
 #include "Alarms.h"
-#include "EEPROM.h"
+#include "eeprom.h"
 #include "IMU.h"
 #include "LCD.h"
 #include "Output.h"

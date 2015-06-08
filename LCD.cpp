@@ -4,7 +4,7 @@
 #include "types.h"
 #include "MultiWii.h"
 #include "Alarms.h"
-#include "EEPROM.h"
+#include "eeprom.h"
 #include "Output.h"
 #include "RX.h"
 #include "Serial.h"

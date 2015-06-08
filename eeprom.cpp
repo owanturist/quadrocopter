@@ -3,7 +3,7 @@
 #include "config.h"
 #include "def.h"
 #include "types.h"
-#include "EEPROM.h"
+#include "eeprom.h"
 #include "MultiWii.h"
 #include "Alarms.h"
 #include "GPS.h"

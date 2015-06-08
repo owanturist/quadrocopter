@@ -2,7 +2,7 @@
 #include "config.h"
 #include "def.h"
 #include "types.h"
-#include "EEPROM.h"
+#include "eeprom.h"
 #include "LCD.h"
 #include "Output.h"
 #include "GPS.h"
