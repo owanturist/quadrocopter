@@ -199,8 +199,8 @@ int16_t  annex650_overrun_count = 0;
 
 
 #if defined(THROTTLE_ANGLE_CORRECTION)
-  int16_t throttleAngleCorrection = 0;	// correction of throttle in lateral wind,
-  int8_t  cosZ = 100;					// cos(angleZ)*100
+  int16_t throttleAngleCorrection = 0;  // correction of throttle in lateral wind,
+  int8_t  cosZ = 100;         // cos(angleZ)*100
 #endif
 
 
@@ -715,134 +715,78 @@ void loop () {
     }
 
     if(rcDelayCommand == 20) {
-      if(f.ARMED) {                   // actions during armed
-        #ifdef ALLOW_ARM_DISARM_VIA_TX_YAW
-          if (conf.activate[BOXARM] == 0 && rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE) go_disarm();    // Disarm via YAW
-        #endif
-        #ifdef ALLOW_ARM_DISARM_VIA_TX_ROLL
-          if (conf.activate[BOXARM] == 0 && rcSticks == THR_LO + YAW_CE + PIT_CE + ROL_LO) go_disarm();    // Disarm via ROLL
-        #endif
-      } else {                        // actions during not armed
+      if(f.ARMED) {  // actions during armed
+        if (conf.activate[BOXARM] == 0 &&
+          rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_CE) {
+            go_disarm();
+          }
+
+      } else {  // actions during not armed
         i=0;
-        if (rcSticks == THR_LO + YAW_LO + PIT_LO + ROL_CE) {    // GYRO calibration
+        // GYRO calibration
+        if (rcSticks == THR_LO + YAW_LO + PIT_LO + ROL_CE) {
           calibratingG=512;
-          #if GPS 
-            GPS_reset_home_position();
-          #endif
+
           #if BARO
-            calibratingB=10;  // calibrate baro to new ground level (10 * 25 ms = ~250 ms non blocking)
+            // calibrate baro to new ground
+            // level (10 * 25 ms = ~250 ms non blocking)
+            calibratingB=10;
           #endif
         }
-        #if defined(INFLIGHT_ACC_CALIBRATION)  
-         else if (rcSticks == THR_LO + YAW_LO + PIT_HI + ROL_HI) {    // Inflight ACC calibration START/STOP
-            if (AccInflightCalibrationMeasurementDone){                // trigger saving into eeprom after landing
-              AccInflightCalibrationMeasurementDone = 0;
-              AccInflightCalibrationSavetoEEProm = 1;
-            }else{ 
-              AccInflightCalibrationArmed = !AccInflightCalibrationArmed; 
-              #if defined(BUZZER)
-               if (AccInflightCalibrationArmed) alarmArray[0]=2; else   alarmArray[0]=3;
-              #endif
-            }
-         } 
-        #endif
-        #ifdef MULTIPLE_CONFIGURATION_PROFILES
-          if      (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_LO) i=1;    // ROLL left  -> Profile 1
-          else if (rcSticks == THR_LO + YAW_LO + PIT_HI + ROL_CE) i=2;    // PITCH up   -> Profile 2
-          else if (rcSticks == THR_LO + YAW_LO + PIT_CE + ROL_HI) i=3;    // ROLL right -> Profile 3
-          if(i) {
-            global_conf.currentSet = i-1;
-            writeGlobalSet(0);
-            readEEPROM();
-            blinkLED(2,40,i);
-            alarmArray[0] = i;
+
+        else if (conf.activate[BOXARM] == 0 &&
+          rcSticks == THR_LO + YAW_HI + PIT_CE + ROL_CE) {
+            go_arm();
           }
-        #endif
-        if (rcSticks == THR_LO + YAW_HI + PIT_HI + ROL_CE) {            // Enter LCD config
-          #if defined(LCD_CONF)
-            configurationLoop(); // beginning LCD configuration
-          #endif
-          previousTime = micros();
-        }
-        #ifdef ALLOW_ARM_DISARM_VIA_TX_YAW
-          else if (conf.activate[BOXARM] == 0 && rcSticks == THR_LO + YAW_HI + PIT_CE + ROL_CE) go_arm();      // Arm via YAW
-        #endif
-        #ifdef ALLOW_ARM_DISARM_VIA_TX_ROLL
-          else if (conf.activate[BOXARM] == 0 && rcSticks == THR_LO + YAW_CE + PIT_CE + ROL_HI) go_arm();      // Arm via ROLL
-        #endif
-        #ifdef LCD_TELEMETRY_AUTO
-          else if (rcSticks == THR_LO + YAW_CE + PIT_HI + ROL_LO) {              // Auto telemetry ON/OFF
-            if (telemetry_auto) {
-              telemetry_auto = 0;
-              telemetry = 0;
-            } else
-              telemetry_auto = 1;
-          }
-        #endif
-        #ifdef LCD_TELEMETRY_STEP
-          else if (rcSticks == THR_LO + YAW_CE + PIT_HI + ROL_HI) {              // Telemetry next step
-            telemetry = telemetryStepSequence[++telemetryStepIndex % strlen(telemetryStepSequence)];
-            #if defined( OLED_I2C_128x64)
-              if (telemetry != 0) i2c_OLED_init();
-            #elif defined(OLED_DIGOLE)
-              if (telemetry != 0) i2c_OLED_DIGOLE_init();
-            #endif
-            LCDclear();
-          }
-        #endif
+
         #if ACC
-          else if (rcSticks == THR_HI + YAW_LO + PIT_LO + ROL_CE) calibratingA=512;     // throttle=max, yaw=left, pitch=min
+          else if (rcSticks == THR_HI + YAW_LO + PIT_LO + ROL_CE) {
+            calibratingA=512;  // throttle=max, yaw=left, pitch=min
+          }
         #endif
         #if MAG
-          else if (rcSticks == THR_HI + YAW_HI + PIT_LO + ROL_CE) f.CALIBRATE_MAG = 1;  // throttle=max, yaw=right, pitch=min
+          else if (rcSticks == THR_HI + YAW_HI + PIT_LO + ROL_CE) {
+            f.CALIBRATE_MAG = 1;  // throttle=max, yaw=right, pitch=min
+          }
         #endif
+
         i=0;
-        if      (rcSticks == THR_HI + YAW_CE + PIT_HI + ROL_CE) {conf.angleTrim[PITCH]+=2; i=1;}
-        else if (rcSticks == THR_HI + YAW_CE + PIT_LO + ROL_CE) {conf.angleTrim[PITCH]-=2; i=1;}
-        else if (rcSticks == THR_HI + YAW_CE + PIT_CE + ROL_HI) {conf.angleTrim[ROLL] +=2; i=1;}
-        else if (rcSticks == THR_HI + YAW_CE + PIT_CE + ROL_LO) {conf.angleTrim[ROLL] -=2; i=1;}
+        if (rcSticks == THR_HI + YAW_CE + PIT_HI + ROL_CE) {
+          conf.angleTrim[PITCH]+=2; i=1;
+        } else if (rcSticks == THR_HI + YAW_CE + PIT_LO + ROL_CE) {
+          conf.angleTrim[PITCH]-=2; i=1;
+        } else if (rcSticks == THR_HI + YAW_CE + PIT_CE + ROL_HI) {
+          conf.angleTrim[ROLL] +=2; i=1;
+        } else if (rcSticks == THR_HI + YAW_CE + PIT_CE + ROL_LO) {
+          conf.angleTrim[ROLL] -=2; i=1;
+        }
+
         if (i) {
           writeParams(1);
-          rcDelayCommand = 0;    // allow autorepetition
-          #if defined(LED_RING)
-            blinkLedRing();
-          #endif
+          rcDelayCommand = 0;  // allow autorepetition
         }
       }
     }
-    #if defined(LED_FLASHER)
-      led_flasher_autoselect_sequence();
-    #endif
-    
-    #if defined(INFLIGHT_ACC_CALIBRATION)
-      if (AccInflightCalibrationArmed && f.ARMED && rcData[THROTTLE] > MINCHECK && !rcOptions[BOXARM] ){ // Copter is airborne and you are turning it off via boxarm : start measurement
-        InflightcalibratingA = 50;
-        AccInflightCalibrationArmed = 0;
-      }  
-      if (rcOptions[BOXCALIB]) {      // Use the Calib Option to activate : Calib = TRUE Meausrement started, Land and Calib = 0 measurement stored
-        if (!AccInflightCalibrationActive && !AccInflightCalibrationMeasurementDone){
-          InflightcalibratingA = 50;
-        }
-      }else if(AccInflightCalibrationMeasurementDone && !f.ARMED){
-        AccInflightCalibrationMeasurementDone = 0;
-        AccInflightCalibrationSavetoEEProm = 1;
-      }
-    #endif
+
 
     uint16_t auxState = 0;
-    for(i=0;i<4;i++)
-      auxState |= (rcData[AUX1+i]<1300)<<(3*i) | (1300<rcData[AUX1+i] && rcData[AUX1+i]<1700)<<(3*i+1) | (rcData[AUX1+i]>1700)<<(3*i+2);
-    for(i=0;i<CHECKBOXITEMS;i++)
-      rcOptions[i] = (auxState & conf.activate[i])>0;
+    for(i=0;i<4;i++) {
+      auxState |= (rcData[AUX1+i]<1300)<<(3*i)
+               | (1300<rcData[AUX1+i] && rcData[AUX1+i]<1700)<<(3*i+1)
+               | (rcData[AUX1+i]>1700)<<(3*i+2);
 
-    // note: if FAILSAFE is disable, failsafeCnt > 5*FAILSAFE_DELAY is always false
+    }
+    for(i=0;i<CHECKBOXITEMS;i++) {
+      rcOptions[i] = (auxState & conf.activate[i])>0;
+    }
+
     #if ACC
-      if ( rcOptions[BOXANGLE] || (failsafeCnt > 5*FAILSAFE_DELAY) ) { 
+      if ( rcOptions[BOXANGLE] ) { 
         // bumpless transfer to Level mode
         if (!f.ANGLE_MODE) {
           errorAngleI[ROLL] = 0; errorAngleI[PITCH] = 0;
           f.ANGLE_MODE = 1;
-        }  
+        }
       } else {
         // failsafe support
         f.ANGLE_MODE = 0;
@@ -859,9 +803,6 @@ void loop () {
     #endif
 
     if (rcOptions[BOXARM] == 0) f.OK_TO_ARM = 1;
-    #if !defined(GPS_LED_INDICATOR)
-      if (f.ANGLE_MODE || f.HORIZON_MODE) {STABLEPIN_ON;} else {STABLEPIN_OFF;}
-    #endif
 
     #if BARO
       #if (!defined(SUPPRESS_BARO_ALTHOLD))
@@ -869,11 +810,7 @@ void loop () {
           if (!f.BARO_MODE) {
             f.BARO_MODE = 1;
             AltHold = alt.EstAlt;
-            #if defined(ALT_HOLD_THROTTLE_MIDPOINT)
-              initialThrottleHold = ALT_HOLD_THROTTLE_MIDPOINT;
-            #else
-              initialThrottleHold = rcCommand[THROTTLE];
-            #endif
+            initialThrottleHold = rcCommand[THROTTLE];
             errorAltitudeI = 0;
             BaroPID=0;
           }
@@ -881,16 +818,8 @@ void loop () {
           f.BARO_MODE = 0;
         }
       #endif
-      #ifdef VARIOMETER
-        if (rcOptions[BOXVARIO]) {
-          if (!f.VARIO_MODE) {
-            f.VARIO_MODE = 1;
-          }
-        } else {
-          f.VARIO_MODE = 0;
-        }
-      #endif
     #endif
+
     #if MAG
       if (rcOptions[BOXMAG]) {
         if (!f.MAG_MODE) {
@@ -904,11 +833,6 @@ void loop () {
         if (!f.HEADFREE_MODE) {
           f.HEADFREE_MODE = 1;
         }
-	  #if defined(ADVANCED_HEADFREE)
-		if ((f.GPS_FIX && GPS_numSat >= 5) && (GPS_distanceToHome > ADV_HEADFREE_RANGE) ) {
-            if (GPS_directionToHome < 180)  {headFreeModeHold = GPS_directionToHome + 180;} else {headFreeModeHold = GPS_directionToHome - 180;}
-         }
-      #endif
       } else {
         f.HEADFREE_MODE = 0;
       }
@@ -916,68 +840,18 @@ void loop () {
         headFreeModeHold = att.heading; // acquire new heading
       }
     #endif
-    
-    #if GPS
-      static uint8_t GPSNavReset = 1;
-      if (f.GPS_FIX && GPS_numSat >= 5 ) {
-        if (rcOptions[BOXGPSHOME]) {  // if both GPS_HOME & GPS_HOLD are checked => GPS_HOME is the priority
-          if (!f.GPS_HOME_MODE)  {
-            f.GPS_HOME_MODE = 1;
-            f.GPS_HOLD_MODE = 0;
-            GPSNavReset = 0;
-            #if defined(I2C_GPS)
-              GPS_I2C_command(I2C_GPS_COMMAND_START_NAV,0);        //waypoint zero
-            #else // SERIAL
-              GPS_set_next_wp(&GPS_home[LAT],&GPS_home[LON]);
-              nav_mode    = NAV_MODE_WP;
-            #endif
-          }
-        } else {
-          f.GPS_HOME_MODE = 0;
-          if (rcOptions[BOXGPSHOLD] && abs(rcCommand[ROLL])< AP_MODE && abs(rcCommand[PITCH]) < AP_MODE) {
-            if (!f.GPS_HOLD_MODE) {
-              f.GPS_HOLD_MODE = 1;
-              GPSNavReset = 0;
-              #if defined(I2C_GPS)
-                GPS_I2C_command(I2C_GPS_COMMAND_POSHOLD,0);
-              #else
-                GPS_hold[LAT] = GPS_coord[LAT];
-                GPS_hold[LON] = GPS_coord[LON];
-                GPS_set_next_wp(&GPS_hold[LAT],&GPS_hold[LON]);
-                nav_mode = NAV_MODE_POSHOLD;
-              #endif
-            }
-          } else {
-            f.GPS_HOLD_MODE = 0;
-            // both boxes are unselected here, nav is reset if not already done
-            if (GPSNavReset == 0 ) {
-              GPSNavReset = 1;
-              GPS_reset_nav();
-            }
-          }
-        }
-      } else {
-        f.GPS_HOME_MODE = 0;
-        f.GPS_HOLD_MODE = 0;
-        #if !defined(I2C_GPS)
-          nav_mode = NAV_MODE_NONE;
-        #endif
-      }
-    #endif
-    
-    #if defined(FIXEDWING) || defined(HELICOPTER)
-      if (rcOptions[BOXPASSTHRU]) {f.PASSTHRU_MODE = 1;}
-      else {f.PASSTHRU_MODE = 0;}
-    #endif
- 
+
   } else { // not in rc loop
-    static uint8_t taskOrder=0; // never call all functions in the same loop, to avoid high delay spikes
+    // never call all functions in the same loop, to avoid high delay spikes
+    static uint8_t taskOrder=0;
+
     if(taskOrder>4) taskOrder-=5;
     switch (taskOrder) {
       case 0:
         taskOrder++;
         #if MAG
-          if (Mag_getADC()) break; // max 350 µs (HMC5883) // only break when we actually did something
+          // max 350 µs (HMC5883) // only break when we actually did something
+          if (Mag_getADC()) break;
         #endif
       case 1:
         taskOrder++;
@@ -988,52 +862,22 @@ void loop () {
         taskOrder++;
         #if BARO
           if (getEstimatedAltitude() !=0) break;
-        #endif    
+        #endif
       case 3:
         taskOrder++;
-        #if GPS
-          if(GPS_Enable) GPS_NewData();
-          break;
-        #endif
       case 4:
         taskOrder++;
-        #if SONAR
-          Sonar_update(); //debug[2] = sonarAlt;
-        #endif
-        #ifdef LANDING_LIGHTS_DDR
-          auto_switch_landing_lights();
-        #endif
-        #ifdef VARIOMETER
-          if (f.VARIO_MODE) vario_signaling();
-        #endif
         break;
     }
   }
  
   computeIMU();
+
   // Measure loop rate just afer reading the sensors
   currentTime = micros();
   cycleTime = currentTime - previousTime;
   previousTime = currentTime;
 
-  //***********************************
-  //**** Experimental FlightModes *****
-  //***********************************
-  #if defined(ACROTRAINER_MODE)
-    if(f.ANGLE_MODE){
-      if (abs(rcCommand[ROLL]) + abs(rcCommand[PITCH]) >= ACROTRAINER_MODE ) {
-        f.ANGLE_MODE=0;
-        f.HORIZON_MODE=0;
-        f.MAG_MODE=0;
-        f.BARO_MODE=0;
-        f.GPS_HOME_MODE=0;
-        f.GPS_HOLD_MODE=0;
-      }
-    }
-  #endif
-
- //*********************************** 
- 
   #if MAG
     if (abs(rcCommand[YAW]) <70 && f.MAG_MODE) {
       int16_t dif = att.heading - magHold;
@@ -1044,14 +888,23 @@ void loop () {
   #endif
 
   #if BARO && (!defined(SUPPRESS_BARO_ALTHOLD))
-    /* Smooth alt change routine , for slow auto and aerophoto modes (in general solution from alexmos). It's slowly increase/decrease 
-     * altitude proportional to stick movement (+/-100 throttle gives about +/-50 cm in 1 second with cycle time about 3-4ms)
+    /**
+     * Smooth alt change routine , for slow auto and aerophoto
+     * modes(in general solution from alexmos). It's slowly 
+     * increase/decrease altitude proportional to stick movement
+     * (+/-100 throttle gives about +/-50 cm in 1 second with
+     * cycle time about 3-4ms)
      */
     if (f.BARO_MODE) {
       static uint8_t isAltHoldChanged = 0;
       static int16_t AltHoldCorr = 0;
-      if (abs(rcCommand[THROTTLE]-initialThrottleHold)>ALT_HOLD_THROTTLE_NEUTRAL_ZONE) {
-        // Slowly increase/decrease AltHold proportional to stick movement ( +100 throttle gives ~ +50 cm in 1 second with cycle time about 3-4ms)
+      if (abs(rcCommand[THROTTLE]-initialThrottleHold)
+          >ALT_HOLD_THROTTLE_NEUTRAL_ZONE) {
+        /**
+         * Slowly increase/decrease AltHold proportional
+         * to stick movement ( +100 throttle gives ~ +50 cm
+         * in 1 second with cycle time about 3-4ms)
+         */
         AltHoldCorr+= rcCommand[THROTTLE] - initialThrottleHold;
         if(abs(AltHoldCorr) > 512) {
           AltHold += AltHoldCorr/512;
@@ -1071,159 +924,180 @@ void loop () {
        rcCommand[THROTTLE]+= throttleAngleCorrection;
     }
   #endif
-  
-  #if GPS
-    if ( (f.GPS_HOME_MODE || f.GPS_HOLD_MODE) && f.GPS_FIX_HOME ) {
-      float sin_yaw_y = sin(att.heading*0.0174532925f);
-      float cos_yaw_x = cos(att.heading*0.0174532925f);
-      #if defined(NAV_SLEW_RATE)     
-        nav_rated[LON]   += constrain(wrap_18000(nav[LON]-nav_rated[LON]),-NAV_SLEW_RATE,NAV_SLEW_RATE);
-        nav_rated[LAT]   += constrain(wrap_18000(nav[LAT]-nav_rated[LAT]),-NAV_SLEW_RATE,NAV_SLEW_RATE);
-        GPS_angle[ROLL]   = (nav_rated[LON]*cos_yaw_x - nav_rated[LAT]*sin_yaw_y) /10;
-        GPS_angle[PITCH]  = (nav_rated[LON]*sin_yaw_y + nav_rated[LAT]*cos_yaw_x) /10;
-      #else 
-        GPS_angle[ROLL]   = (nav[LON]*cos_yaw_x - nav[LAT]*sin_yaw_y) /10;
-        GPS_angle[PITCH]  = (nav[LON]*sin_yaw_y + nav[LAT]*cos_yaw_x) /10;
-      #endif
-    } else {
-      GPS_angle[ROLL]  = 0;
-      GPS_angle[PITCH] = 0;
-    }
-  #endif
 
-  //**** PITCH & ROLL & YAW PID ****
-#if PID_CONTROLLER == 1 // evolved oldschool
-  if ( f.HORIZON_MODE ) prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),512);
 
-  // PITCH & ROLL
-  for(axis=0;axis<2;axis++) {
-    rc = rcCommand[axis]<<1;
-    error = rc - imu.gyroData[axis];
-    errorGyroI[axis]  = constrain(errorGyroI[axis]+error,-16000,+16000);       // WindUp   16 bits is ok here
-    if (abs(imu.gyroData[axis])>640) errorGyroI[axis] = 0;
-
-    ITerm = (errorGyroI[axis]>>7)*conf.pid[axis].I8>>6;                        // 16 bits is ok here 16000/125 = 128 ; 128*250 = 32000
-
-    PTerm = (int32_t)rc*conf.pid[axis].P8>>6;
-
-    if (f.ANGLE_MODE || f.HORIZON_MODE) { // axis relying on ACC
-      // 50 degrees max inclination
-      errorAngle         = constrain(rc + GPS_angle[axis],-500,+500) - att.angle[axis] + conf.angleTrim[axis]; //16 bits is ok here
-      errorAngleI[axis]  = constrain(errorAngleI[axis]+errorAngle,-10000,+10000);                                                // WindUp     //16 bits is ok here
-
-      PTermACC           = ((int32_t)errorAngle*conf.pid[PIDLEVEL].P8)>>7; // 32 bits is needed for calculation: errorAngle*P8 could exceed 32768   16 bits is ok for result
-      
-      int16_t limit      = conf.pid[PIDLEVEL].D8*5;
-      PTermACC           = constrain(PTermACC,-limit,+limit);
-
-      ITermACC           = ((int32_t)errorAngleI[axis]*conf.pid[PIDLEVEL].I8)>>12;   // 32 bits is needed for calculation:10000*I8 could exceed 32768   16 bits is ok for result
-
-      ITerm              = ITermACC + ((ITerm-ITermACC)*prop>>9);
-      PTerm              = PTermACC + ((PTerm-PTermACC)*prop>>9);
+  // >> pitch & roll & yaw pid
+  #if PID_CONTROLLER == 1 // evolved oldschool
+    if ( f.HORIZON_MODE ) {
+      prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),512);
     }
 
-    PTerm -= ((int32_t)imu.gyroData[axis]*dynP8[axis])>>6; // 32 bits is needed for calculation   
-    
-    delta          = imu.gyroData[axis] - lastGyro[axis];  // 16 bits is ok here, the dif between 2 consecutive gyro reads is limited to 800
-    lastGyro[axis] = imu.gyroData[axis];
-    DTerm          = delta1[axis]+delta2[axis]+delta;
-    delta2[axis]   = delta1[axis];
-    delta1[axis]   = delta;
- 
-    DTerm = ((int32_t)DTerm*dynD8[axis])>>5;        // 32 bits is needed for calculation
+    // PITCH & ROLL
+    for(axis=0;axis<2;axis++) {
+      rc = rcCommand[axis]<<1;
+      error = rc - imu.gyroData[axis];
+      // WindUp   16 bits is ok here
+      errorGyroI[axis]  = constrain(errorGyroI[axis]+error,-16000,+16000);
 
-    axisPID[axis] =  PTerm + ITerm - DTerm;
-  }
-
-  //YAW
-  #define GYRO_P_MAX 300
-  #define GYRO_I_MAX 250
-
-  rc = (int32_t)rcCommand[YAW] * (2*conf.yawRate + 30)  >> 5;
-
-  error = rc - imu.gyroData[YAW];
-  errorGyroI_YAW  += (int32_t)error*conf.pid[YAW].I8;
-  errorGyroI_YAW  = constrain(errorGyroI_YAW, 2-((int32_t)1<<28), -2+((int32_t)1<<28));
-  if (abs(rc) > 50) errorGyroI_YAW = 0;
-  
-  PTerm = (int32_t)error*conf.pid[YAW].P8>>6;
-  #ifndef COPTER_WITH_SERVO
-    int16_t limit = GYRO_P_MAX-conf.pid[YAW].D8;
-    PTerm = constrain(PTerm,-limit,+limit);
-  #endif
-  
-  ITerm = constrain((int16_t)(errorGyroI_YAW>>13),-GYRO_I_MAX,+GYRO_I_MAX);
-  
-  axisPID[YAW] =  PTerm + ITerm;
-  
-#elif PID_CONTROLLER == 2 // alexK
-  #define GYRO_I_MAX 256
-  #define ACC_I_MAX 256
-  prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),500); // range [0;500]
-
-  //----------PID controller----------
-  for(axis=0;axis<3;axis++) {
-    //-----Get the desired angle rate depending on flight mode
-    if ((f.ANGLE_MODE || f.HORIZON_MODE) && axis<2 ) { // MODE relying on ACC
-      // calculate error and limit the angle to 50 degrees max inclination
-      errorAngle = constrain((rcCommand[axis]<<1) + GPS_angle[axis],-500,+500) - att.angle[axis] + conf.angleTrim[axis]; //16 bits is ok here
-    }
-    if (axis == 2) {//YAW is always gyro-controlled (MAG correction is applied to rcCommand)
-      AngleRateTmp = (((int32_t) (conf.yawRate + 27) * rcCommand[2]) >> 5);
-    } else {
-      if (!f.ANGLE_MODE) {//control is GYRO based (ACRO and HORIZON - direct sticks control is applied to rate PID
-        AngleRateTmp = ((int32_t) (conf.rollPitchRate + 27) * rcCommand[axis]) >> 4;
-        if (f.HORIZON_MODE) {
-          //mix up angle error to desired AngleRateTmp to add a little auto-level feel
-          AngleRateTmp += ((int32_t) errorAngle * conf.pid[PIDLEVEL].I8)>>8;
-        }
-      } else {//it's the ANGLE mode - control is angle based, so control loop is needed
-        AngleRateTmp = ((int32_t) errorAngle * conf.pid[PIDLEVEL].P8)>>4;
+      if (abs(imu.gyroData[axis])>640) {
+        errorGyroI[axis] = 0;
       }
+
+      // 16 bits is ok here 16000/125 = 128 ; 128*250 = 32000
+      ITerm = (errorGyroI[axis]>>7)*conf.pid[axis].I8>>6;
+
+      PTerm = (int32_t)rc*conf.pid[axis].P8>>6;
+
+      if (f.ANGLE_MODE || f.HORIZON_MODE) { // axis relying on ACC
+        // 50 degrees max inclination
+        errorAngle = constrain(rc + GPS_angle[axis],-500,+500)
+                   - att.angle[axis] + conf.angleTrim[axis]; //16 bits is ok here
+
+        // WindUp, 16 bits is ok here
+        errorAngleI[axis] = constrain(errorAngleI[axis]+errorAngle,-10000,+10000);
+
+        // 32 bits is needed for calculation: errorAngle*P8 could exceed 32768
+        // 16 bits is ok for result
+        PTermACC = ((int32_t)errorAngle*conf.pid[PIDLEVEL].P8)>>7;
+        
+        int16_t limit      = conf.pid[PIDLEVEL].D8*5;
+        PTermACC           = constrain(PTermACC,-limit,+limit);
+
+        // 32 bits is needed for calculation:10000*I8 could exceed 32768
+        // 16 bits is ok for result
+        ITermACC = ((int32_t)errorAngleI[axis]*conf.pid[PIDLEVEL].I8)>>12;
+
+        ITerm = ITermACC + ((ITerm-ITermACC)*prop>>9);
+        PTerm = PTermACC + ((PTerm-PTermACC)*prop>>9);
+      }
+
+      // 32 bits is needed for calculation   
+      PTerm -= ((int32_t)imu.gyroData[axis]*dynP8[axis])>>6;
+      
+      // 16 bits is ok here, the dif between 2
+      // consecutive gyro reads is limited to 800
+      delta          = imu.gyroData[axis] - lastGyro[axis];
+      lastGyro[axis] = imu.gyroData[axis];
+      DTerm          = delta1[axis]+delta2[axis]+delta;
+      delta2[axis]   = delta1[axis];
+      delta1[axis]   = delta;
+
+      // 32 bits is needed for calculation
+      DTerm = ((int32_t)DTerm*dynD8[axis])>>5;
+
+      axisPID[axis] =  PTerm + ITerm - DTerm;
     }
 
-    //--------low-level gyro-based PID. ----------
-    //Used in stand-alone mode for ACRO, controlled by higher level regulators in other modes
-    //-----calculate scaled error.AngleRates
-    //multiplication of rcCommand corresponds to changing the sticks scaling here
-    RateError = AngleRateTmp  - imu.gyroData[axis];
+    //YAW
+    #define GYRO_P_MAX 300
+    #define GYRO_I_MAX 250
 
-    //-----calculate P component
-    PTerm = ((int32_t) RateError * conf.pid[axis].P8)>>7;
+    rc = (int32_t)rcCommand[YAW] * (2*conf.yawRate + 30)  >> 5;
 
-    //-----calculate I component
-    //there should be no division before accumulating the error to integrator, because the precision would be reduced.
-    //Precision is critical, as I prevents from long-time drift. Thus, 32 bits integrator is used.
-    //Time correction (to avoid different I scaling for different builds based on average cycle time)
-    //is normalized to cycle time = 2048.
-    errorGyroI[axis]  += (((int32_t) RateError * cycleTime)>>11) * conf.pid[axis].I8;
-    //limit maximum integrator value to prevent WindUp - accumulating extreme values when system is saturated.
-    //I coefficient (I8) moved before integration to make limiting independent from PID settings
-    errorGyroI[axis]  = constrain(errorGyroI[axis], (int32_t) -GYRO_I_MAX<<13, (int32_t) +GYRO_I_MAX<<13);
-    ITerm = errorGyroI[axis]>>13;
+    error = rc - imu.gyroData[YAW];
+    errorGyroI_YAW  += (int32_t)error*conf.pid[YAW].I8;
+    errorGyroI_YAW  = constrain(errorGyroI_YAW, 2-((int32_t)1<<28), -2+((int32_t)1<<28));
+    if (abs(rc) > 50) errorGyroI_YAW = 0;
+    
+    PTerm = (int32_t)error*conf.pid[YAW].P8>>6;
 
-    //-----calculate D-term
-    delta          = RateError - lastError[axis];  // 16 bits is ok here, the dif between 2 consecutive gyro reads is limited to 800
-    lastError[axis] = RateError;
+    ITerm = constrain((int16_t)(errorGyroI_YAW>>13),-GYRO_I_MAX,+GYRO_I_MAX);
 
-    //Correct difference by cycle time. Cycle time is jittery (can be different 2 times), so calculated difference
-    // would be scaled by different dt each time. Division by dT fixes that.
-    delta = ((int32_t) delta * ((uint16_t)0xFFFF / (cycleTime>>4)))>>6;
-    //add moving average here to reduce noise
-    deltaSum       = delta1[axis]+delta2[axis]+delta;
-    delta2[axis]   = delta1[axis];
-    delta1[axis]   = delta;
+    axisPID[YAW] =  PTerm + ITerm;
 
-    DTerm = (deltaSum*conf.pid[axis].D8)>>8;
+  #elif PID_CONTROLLER == 2
+    #define GYRO_I_MAX 256
+    #define ACC_I_MAX 256
+    // range [0;500]
+    prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),500);
 
-    //-----calculate total PID output
-    axisPID[axis] =  PTerm + ITerm + DTerm;
-  }
-#else
-  #error "*** you must set PID_CONTROLLER to one existing implementation"
-#endif
+    // PID controller
+    for(axis=0;axis<3;axis++) {
+      // Get the desired angle rate depending on flight mode
+      if ((f.ANGLE_MODE || f.HORIZON_MODE) && axis<2 ) { // MODE relying on ACC
+        // calculate error and limit the angle to 50 degrees max inclination
+        // 16 bits is ok here
+        errorAngle = constrain((rcCommand[axis]<<1) + GPS_angle[axis],-500,+500)
+                   - att.angle[axis] + conf.angleTrim[axis];
+      }
+
+      // YAW is always gyro-controlled (MAG correction is applied to rcCommand)
+      if (axis == 2) {
+        AngleRateTmp = (((int32_t) (conf.yawRate + 27) * rcCommand[2]) >> 5);
+      } else {
+        // control is GYRO based 
+        // ACRO and HORIZON - direct sticks control is applied to rate PID
+        if (!f.ANGLE_MODE) {
+          AngleRateTmp =((int32_t) (conf.rollPitchRate + 27)
+                       * rcCommand[axis]) >> 4;
+          if (f.HORIZON_MODE) {
+            // mix up angle error to desired AngleRateTmp 
+            // to add a little auto-level feel
+            AngleRateTmp += ((int32_t) errorAngle * conf.pid[PIDLEVEL].I8)>>8;
+          }
+        // it's the ANGLE mode - control is angle based,
+        // so control loop is needed
+        } else {
+          AngleRateTmp = ((int32_t) errorAngle * conf.pid[PIDLEVEL].P8)>>4;
+        }
+      }
+
+      // low-level gyro-based PID
+      // Used in stand-alone mode for ACRO,
+      // controlled by higher level regulators in other modes
+
+      // calculate scaled error.AngleRates
+      // multiplication of rcCommand corresponds to
+      // changing the sticks scaling here
+      RateError = AngleRateTmp - imu.gyroData[axis];
+
+      // calculate P component
+      PTerm = ((int32_t) RateError * conf.pid[axis].P8)>>7;
+
+      // calculate I component
+      //there should be no division before accumulating the error
+      //to integrator, because the precision would be reduced.
+      //Precision is critical, as I prevents from long-time drift.
+      //Thus, 32 bits integrator is used. Time correction
+      //(to avoid different I scaling for different builds
+      //based on average cycle time) is normalized to cycle time = 2048.
+      errorGyroI[axis] += (((int32_t) RateError * cycleTime)>>11)
+                       * conf.pid[axis].I8;
+
+      //limit maximum integrator value to prevent WindUp -
+      //accumulating extreme values when system is saturated.
+      //I coefficient (I8) moved before integration to make
+      //limiting independent from PID settings
+      errorGyroI[axis]  = constrain(errorGyroI[axis], (int32_t)
+                        - GYRO_I_MAX<<13, (int32_t) +GYRO_I_MAX<<13);
+      ITerm = errorGyroI[axis]>>13;
+
+      // calculate D-term
+      // 16 bits is ok here, the dif between 2 consecutive
+      // gyro reads is limited to 800
+      delta = RateError - lastError[axis];
+      lastError[axis] = RateError;
+
+      // Correct difference by cycle time. Cycle time is jittery
+      // (can be different 2 times), so calculated difference would
+      // be scaled by different dt each time. Division by dT fixes that.
+      delta = ((int32_t) delta * ((uint16_t)0xFFFF / (cycleTime>>4)))>>6;
+      // add moving average here to reduce noise
+      deltaSum       = delta1[axis]+delta2[axis]+delta;
+      delta2[axis]   = delta1[axis];
+      delta1[axis]   = delta;
+
+      DTerm = (deltaSum*conf.pid[axis].D8)>>8;
+
+      // calculate total PID output
+      axisPID[axis] =  PTerm + ITerm + DTerm;
+    }
+  #else
+    #error "*** you must set PID_CONTROLLER to one existing implementation"
+  #endif
   mixTable();
-  // do not update servos during unarmed calibration of sensors which are sensitive to vibration
+  // do not update servos during unarmed calibration of
+  // sensors which are sensitive to vibration
   if ( (f.ARMED) || ((!calibratingG) && (!calibratingA)) ) writeServos();
   writeMotors();
 }
