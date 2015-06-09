@@ -15,113 +15,78 @@ void computeIMU () {
   int16_t gyroADCinter[3];
   static uint32_t timeInterleave = 0;
 
-  //we separate the 2 situations because reading gyro values with a gyro only setup can be acchieved at a higher rate
-  //gyro+nunchuk: we must wait for a quite high delay betwwen 2 reads to get both WM+ and Nunchuk data. It works with 3ms
-  //gyro only: the delay to read 2 consecutive values can be reduced to only 0.65ms
-  #if defined(NUNCHUCK)
-    annexCode();
-    while((uint16_t)(micros()-timeInterleave)<INTERLEAVING_DELAY) ; //interleaving delay between 2 consecutive reads
-    timeInterleave=micros();
+  #if ACC
     ACC_getADC();
-    getEstimatedAttitude(); // computation time must last less than one interleaving delay
-    while((uint16_t)(micros()-timeInterleave)<INTERLEAVING_DELAY) ; //interleaving delay between 2 consecutive reads
-    timeInterleave=micros();
-    f.NUNCHUKDATA = 1;
-    while(f.NUNCHUKDATA) ACC_getADC(); // For this interleaving reading, we must have a gyro update at this point (less delay)
-
-    for (axis = 0; axis < 3; axis++) {
-      // empirical, we take a weighted value of the current and the previous values
-      // /4 is to average 4 values, note: overflow is not possible for WMP gyro here
-      imu.gyroData[axis] = (imu.gyroADC[axis]*3+gyroADCprevious[axis])>>2;
-      gyroADCprevious[axis] = imu.gyroADC[axis];
-    }
-  #else
-    #if ACC
-      ACC_getADC();
-      getEstimatedAttitude();
-    #endif
-    #if GYRO
-      Gyro_getADC();
-    #endif
-    for (axis = 0; axis < 3; axis++)
-      gyroADCp[axis] =  imu.gyroADC[axis];
-    timeInterleave=micros();
-    annexCode();
-    uint8_t t=0;
-    while((uint16_t)(micros()-timeInterleave)<650) t=1; //empirical, interleaving delay between 2 consecutive reads
-    if (!t) annex650_overrun_count++;
-    #if GYRO
-      Gyro_getADC();
-    #endif
-    for (axis = 0; axis < 3; axis++) {
-      gyroADCinter[axis] =  imu.gyroADC[axis]+gyroADCp[axis];
-      // empirical, we take a weighted value of the current and the previous values
-      imu.gyroData[axis] = (gyroADCinter[axis]+gyroADCprevious[axis])/3;
-      gyroADCprevious[axis] = gyroADCinter[axis]>>1;
-      if (!ACC) imu.accADC[axis]=0;
-    }
+    getEstimatedAttitude();
   #endif
+  #if GYRO
+    Gyro_getADC();
+  #endif
+  for (axis = 0; axis < 3; axis++)
+    gyroADCp[axis] =  imu.gyroADC[axis];
+  timeInterleave=micros();
+  annexCode();
+  uint8_t t=0;
+  while((uint16_t)(micros()-timeInterleave)<650) t=1; //empirical, interleaving delay between 2 consecutive reads
+  if (!t) annex650_overrun_count++;
+  #if GYRO
+    Gyro_getADC();
+  #endif
+  for (axis = 0; axis < 3; axis++) {
+    gyroADCinter[axis] =  imu.gyroADC[axis]+gyroADCp[axis];
+    // empirical, we take a weighted value of the current and the previous values
+    imu.gyroData[axis] = (gyroADCinter[axis]+gyroADCprevious[axis])/3;
+    gyroADCprevious[axis] = gyroADCinter[axis]>>1;
+    if (!ACC) imu.accADC[axis]=0;
+  }
+
   #if defined(GYRO_SMOOTHING)
     static int16_t gyroSmooth[3] = {0,0,0};
     for (axis = 0; axis < 3; axis++) {
       imu.gyroData[axis] = (int16_t) ( ( (int32_t)((int32_t)gyroSmooth[axis] * (conf.Smoothing[axis]-1) )+imu.gyroData[axis]+1 ) / conf.Smoothing[axis]);
       gyroSmooth[axis] = imu.gyroData[axis];
     }
-  #elif defined(TRI)
-    static int16_t gyroYawSmooth = 0;
-    imu.gyroData[YAW] = (gyroYawSmooth*2+imu.gyroData[YAW])/3;
-    gyroYawSmooth = imu.gyroData[YAW];
   #endif
 }
 
-// **************************************************
-// Simplified IMU based on "Complementary Filter"
-// Inspired by http://starlino.com/imu_guide.html
-//
-// adapted by ziss_dm : http://www.multiwii.com/forum/viewtopic.php?f=8&t=198
-//
-// The following ideas was used in this project:
-// 1) Rotation matrix: http://en.wikipedia.org/wiki/Rotation_matrix
-// 2) Small-angle approximation: http://en.wikipedia.org/wiki/Small-angle_approximation
-// 3) C. Hastings approximation for atan2()
-// 4) Optimization tricks: http://www.hackersdelight.org/
-//
-// Currently Magnetometer uses separate CF which is used only
-// for heading approximation.
-//
-// **************************************************
 
-//******  advanced users settings *******************
-/* Set the Low Pass Filter factor for ACC
-   Increasing this value would reduce ACC noise (visible in GUI), but would increase ACC lag time
-   Comment this if  you do not want filter at all.
-   unit = n power of 2 */
+// > ADVANCED USERS SETTINGS
+/**
+ * Set the Low Pass Filter factor for ACC Increasing this value would
+ * reduce ACC noise (visible in GUI), but would increase ACC lag time
+ * Comment this if  you do not want filter at all. unit = n power of 2
+ */
 // this one is also used for ALT HOLD calculation, should not be changed
 #ifndef ACC_LPF_FACTOR
   #define ACC_LPF_FACTOR 4 // that means a LPF of 16
 #endif
 
-/* Set the Gyro Weight for Gyro/Acc complementary filter
-   Increasing this value would reduce and delay Acc influence on the output of the filter*/
+/**
+ * Set the Gyro Weight for Gyro/Acc complementary filter Increasing this
+ * value would reduce and delay Acc influence on the output of the filter
+ */
 #ifndef GYR_CMPF_FACTOR
   #define GYR_CMPF_FACTOR 600
 #endif
 
-/* Set the Gyro Weight for Gyro/Magnetometer complementary filter
-   Increasing this value would reduce and delay Magnetometer influence on the output of the filter*/
+/**
+ * Set the Gyro Weight for Gyro/Magnetometer complementary filter
+ * Increasing this value would reduce and delay Magnetometer
+ * influence on the output of the filter
+ */
 #define GYR_CMPFM_FACTOR 250
+// end of advanced users settings
 
-//****** end of advanced users settings *************
 #define INV_GYR_CMPF_FACTOR   (1.0f / (GYR_CMPF_FACTOR  + 1.0f))
 #define INV_GYR_CMPFM_FACTOR  (1.0f / (GYR_CMPFM_FACTOR + 1.0f))
 
-typedef struct fp_vector {		
-  float X,Y,Z;		
+typedef struct fp_vector {
+  float X,Y,Z;
 } t_fp_vector_def;
 
-typedef union {		
-  float A[3];		
-  t_fp_vector_def V;		
+typedef union {
+  float A[3];
+  t_fp_vector_def V;
 } t_fp_vector;
 
 typedef struct int32_t_vector {
@@ -186,7 +151,8 @@ void getEstimatedAttitude(){
   static uint16_t previousT;
   uint16_t currentT = micros();
 
-  scale = (currentT - previousT) * GYRO_SCALE; // GYRO_SCALE unit: radian/microsecond
+  // GYRO_SCALE unit: radian/microsecond
+  scale = (currentT - previousT) * GYRO_SCALE;
   previousT = currentT;
 
   // Initialization
@@ -207,13 +173,19 @@ void getEstimatedAttitude(){
 
   accMag = accMag*100/((int32_t)ACC_1G*ACC_1G);
   validAcc = 72 < (uint16_t)accMag && (uint16_t)accMag < 133;
-  // Apply complimentary filter (Gyro drift correction)
-  // If accel magnitude >1.15G or <0.85G and ACC vector outside of the limit range => we neutralize the effect of accelerometers in the angle estimation.
-  // To do that, we just skip filter, as EstV already rotated by Gyro
+
+  /**
+   * Apply complimentary filter (Gyro drift correction) If accel
+   * magnitude >1.15G or <0.85G and ACC vector outside of the limit
+   * range => we neutralize the effect of accelerometers in the
+   * angle estimation. To do that, we just skip filter, as EstV
+   * already rotated by Gyro
+   */
   for (axis = 0; axis < 3; axis++) {
     if ( validAcc )
       EstG.A[axis] = (EstG.A[axis] * GYR_CMPF_FACTOR + imu.accSmooth[axis]) * INV_GYR_CMPF_FACTOR;
-    EstG32.A[axis] = EstG.A[axis]; //int32_t cross calculation is a little bit faster than float	
+    //int32_t cross calculation is a little bit faster than float  
+    EstG32.A[axis] = EstG.A[axis];
     #if MAG
       EstM.A[axis] = (EstM.A[axis] * GYR_CMPFM_FACTOR  + imu.magADC[axis]) * INV_GYR_CMPFM_FACTOR;
       EstM32.A[axis] = EstM.A[axis];
@@ -238,14 +210,9 @@ void getEstimatedAttitude(){
     att.heading += conf.mag_declination; // Set from GUI
     att.heading /= 10;
   #endif
-
-  #if defined(THROTTLE_ANGLE_CORRECTION)
-    cosZ = EstG.V.Z / ACC_1G * 100.0f;                                                        // cos(angleZ) * 100 
-    throttleAngleCorrection = THROTTLE_ANGLE_CORRECTION * constrain(100 - cosZ, 0, 100) >>3;  // 16 bit ok: 200*150 = 30000  
-  #endif
 }
 
-#define UPDATE_INTERVAL 25000    // 40hz update rate (20hz LPF on acc)
+#define UPDATE_INTERVAL 25000  // 40hz update rate (20hz LPF on acc)
 #define BARO_TAB_SIZE   21
 
 #define ACC_Z_DEADBAND (ACC_1G>>5) // was 40 instead of 32 now
