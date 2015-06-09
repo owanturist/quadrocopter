@@ -9,6 +9,9 @@
 * - mark all PWM pins as Output
 * - Specific PWM Timers & Registers for the atmega328P (Promini)
 * - special version of MultiWii to calibrate all attached ESCs
+* MIXES THE COMPUTED STABILIZE VALUES TO THE MOTORS
+* - main Mix Table
+* - normalize the Motors values
 */
 
 #include "Arduino.h"
@@ -16,7 +19,6 @@
 #include "def.h"
 #include "types.h"
 #include "MultiWii.h"
-#include "Alarms.h"
 
 void initializeSoftPWM(void);
 
