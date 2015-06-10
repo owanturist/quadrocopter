@@ -3,10 +3,8 @@
 #include "def.h"
 #include "types.h"
 #include "MultiWii.h"
-#include "Alarms.h"
 #include "eeprom.h"
 #include "IMU.h"
-#include "LCD.h"
 
 void i2c_BMP085_UT_Start(void);
 
@@ -332,11 +330,6 @@ void GYRO_Common() {
       gyroZero[axis]=0;
       if (calibratingG == 1) {
         gyroZero[axis]=(g[axis]+256)>>9;
-      #if defined(BUZZER)
-        alarmArray[7] = 4;
-      #else
-        blinkLED(10,15,1); //the delay causes to beep the buzzer really long 
-      #endif
       }
     }
     #if defined(GYROCALIBRATIONFAILSAFE)

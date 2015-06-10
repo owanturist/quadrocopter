@@ -23,15 +23,12 @@
 #include "def.h"
 #include "types.h"
 #include "MultiWii.h"
-#include "Alarms.h"
 #include "eeprom.h"
 #include "IMU.h"
-#include "LCD.h"
 #include "Output.h"
 #include "RX.h"
 #include "Sensors.h"
 #include "Serial.h"
-#include "GPS.h"
 #include "Protocol.h"
 
 #include <avr/pgmspace.h>

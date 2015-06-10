@@ -5,7 +5,6 @@
 #include "Serial.h"
 #include "Protocol.h"
 #include "MultiWii.h"
-#include "Alarms.h"
 
 /**************************************************************************************/
 /***************             Global RX related variables           ********************/
