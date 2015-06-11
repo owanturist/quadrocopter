@@ -7,7 +7,6 @@
 * I2C GENERAL FUNCTIONS
 * GYRO COMMON PART
 * ACC COMMON PART
-* I2C GYROSCOPE AND ACCELEROMETER MPU6050
 */
 
 #include "Arduino.h"
@@ -18,8 +17,8 @@
 #include "eeprom.h"
 #include "IMU.h"
 
-void waitTransmissionI2C();
-void ACCInit();
+void i2cWaitTransmission();
+void accInit();
 
 // > BOARD ORIENTATION AND SETUP
 #ifndef ACC_ORIENTATION
@@ -38,14 +37,6 @@ void ACCInit();
   }
 #endif
 
-#ifndef MAG_ORIENTATION
-  #define MAG_ORIENTATION(X, Y, Z) {   \
-    imu.magADC[ROLL]  = X;             \
-    imu.magADC[PITCH] = Y;             \
-    imu.magADC[YAW]   = Z;             \
-  }
-#endif
-
 
 // > I2C ADDRESS
 #ifndef MPU6050_ADDRESS
@@ -54,34 +45,22 @@ void ACCInit();
 
 
 // > MPU6050 GYRO LPF SETTING
-#if defined(MPU6050_LPF_256HZ) || defined(MPU6050_LPF_188HZ) || \
-    defined(MPU6050_LPF_98HZ)  || defined(MPU6050_LPF_42HZ)  || \
-    defined(MPU6050_LPF_20HZ)  || defined(MPU6050_LPF_10HZ)  || \
-    defined(MPU6050_LPF_5HZ)
-
-  #ifdef MPU6050_LPF_256HZ
-    #define MPU6050_DLPF_CFG 0
-  #endif
-  #ifdef MPU6050_LPF_188HZ
-    #define MPU6050_DLPF_CFG 1
-  #endif
-  #ifdef MPU6050_LPF_98HZ
-    #define MPU6050_DLPF_CFG 2
-  #endif
-  #ifdef MPU6050_LPF_42HZ
-    #define MPU6050_DLPF_CFG 3
-  #endif
-  #ifdef MPU6050_LPF_20HZ
-    #define MPU6050_DLPF_CFG 4
-  #endif
-  #ifdef MPU6050_LPF_10HZ
-    #define MPU6050_DLPF_CFG 5
-  #endif
-  #ifdef MPU6050_LPF_5HZ
-    #define MPU6050_DLPF_CFG 6
-  #endif
+#if   defined(MPU6050_LPF_256HZ)
+  #define MPU6050_LPF_CFG 0
+#elif defined(MPU6050_LPF_188HZ)
+  #define MPU6050_LPF_CFG 1
+#elif defined(MPU6050_LPF_98HZ)
+  #define MPU6050_LPF_CFG 2
+#elif defined(MPU6050_LPF_42HZ)
+  #define MPU6050_LPF_CFG 3
+#elif defined(MPU6050_LPF_20HZ)
+  #define MPU6050_LPF_CFG 4
+#elif defined(MPU6050_LPF_10HZ)
+  #define MPU6050_LPF_CFG 5
+#elif defined(MPU6050_LPF_5HZ)
+  #define MPU6050_LPF_CFG 6
 #else
-  #define MPU6050_DLPF_CFG   0
+  #define MPU6050_LPF_CFG 0
 #endif
 
 
@@ -91,18 +70,22 @@ static uint32_t neutralizeTime = 0;
 
 // > I2C GENERAL FUNCTIONS
 void i2cInit(void) {
-  TWSR = 0;                               // no prescaler => prescaler = 1
-  TWBR = ((F_CPU / I2C_SPEED) - 16) / 2;  // change the I2C clock rate
-  TWCR = 1 << TWEN;                       // enable twi module, no interrupt
+  // change the I2C clock rate
+  TWBR = ((F_CPU / I2C_SPEED) - 16) / 2;
+
+  // enable twi module, no interrupt
+  TWCR = 1 << TWEN;
 }
 
 
 void i2cRepStart(uint8_t address) {
-  TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN) ; // send REPEAT START condition
-  waitTransmissionI2C();                       // wait until transmission completed
-  TWDR = address;                              // send device address
+  // send REPEAT START condition
+  TWCR = (1 << TWINT) | (1 << TWSTA) | (1 << TWEN);
+
+  i2cWaitTransmission();              // wait until transmission completed
+  TWDR = address;                     // send device address
   TWCR = (1 << TWINT) | (1 << TWEN);
-  waitTransmissionI2C();                       // wail until transmission completed
+  i2cWaitTransmission();              // wail until transmission completed
 }
 
 
@@ -114,20 +97,20 @@ void i2cStop(void) {
 void i2cWrite(uint8_t data ) {
   TWDR = data;  // send data to the previously addressed device
   TWCR = (1 << TWINT) | (1 << TWEN);
-  waitTransmissionI2C();
+  i2cWaitTransmission();
 }
 
 
 uint8_t i2cRead(uint8_t ack) {
   TWCR = (1 << TWINT) | (1 << TWEN) | (ack? (1 << TWEA) : 0);
-  waitTransmissionI2C();
+  i2cWaitTransmission();
   uint8_t r = TWDR;
   if (!ack) i2cStop();
   return r;
 }
 
 
-void waitTransmissionI2C() {
+void i2cWaitTransmission() {
   uint16_t count = 255;
   while (!(TWCR & (1 << TWINT))) {
     count--;
@@ -146,8 +129,7 @@ size_t i2cReadToBuf(uint8_t add, void *buf, size_t size) {
   i2cRepStart((add << 1) | 1);  // I2C read direction
   size_t bytes_read = 0;
   uint8_t *b = (uint8_t*)buf;
-  while (size --) {
-    // acknowledge all but the final byte 
+  while (size --) {             // acknowledge all but the final byte
     *b++ = i2cRead(size > 0);
     bytes_read++;
   }
@@ -156,8 +138,8 @@ size_t i2cReadToBuf(uint8_t add, void *buf, size_t size) {
 
 
 size_t i2cReadRegToBuf(uint8_t add, uint8_t reg, void *buf, size_t size) {
-  i2cRepStart(add << 1); // I2C write direction
-  i2cWrite(reg);          // register selection
+  i2cRepStart(add << 1);               // I2C write direction
+  i2cWrite(reg);                       // register selection
   return i2cReadToBuf(add, buf, size);
 }
 
@@ -176,7 +158,7 @@ void i2cWriteReg(uint8_t add, uint8_t reg, uint8_t val) {
 
 
 // > GYRO COMMON PART
-void GYROCommon() {
+void gyroCommon() {
   static int16_t previousGyroADC[3] = {0,0,0};
   static int32_t g[3];
   uint8_t axis, tilt=0;
@@ -209,13 +191,13 @@ void GYROCommon() {
     previousGyroADC[axis] = imu.gyroADC[axis];
   }
 
-  #if defined(SENSORS_TILT_45DEG_LEFT)
+  #ifdef SENSORS_TILT_45DEG_LEFT
     int16_t temp = ((imu.gyroADC[PITCH] - imu.gyroADC[ROLL] ) * 7) / 10;
     imu.gyroADC[ROLL] = ((imu.gyroADC[ROLL] + imu.gyroADC[PITCH]) * 7) / 10;
     imu.gyroADC[PITCH] = temp;
   #endif
 
-  #if defined(SENSORS_TILT_45DEG_RIGHT)
+  #ifdef SENSORS_TILT_45DEG_RIGHT
     int16_t temp = ((imu.gyroADC[PITCH] + imu.gyroADC[ROLL] ) * 7) / 10;
     imu.gyroADC[ROLL] = ((imu.gyroADC[ROLL] - imu.gyroADC[PITCH]) * 7) / 10;
     imu.gyroADC[PITCH] = temp;
@@ -224,7 +206,7 @@ void GYROCommon() {
 
 
 // > ACC COMMON PART
-void ACCCommon() {
+void accCommon() {
   static int32_t a[3];
   if (calibratingA > 0) {
     for (uint8_t axis = 0; axis < 3; axis++) {
@@ -236,7 +218,8 @@ void ACCCommon() {
       imu.accADC[axis] = 0;
       global_conf.accZero[axis] = 0;
     }
-    // Calculate average, shift Z down by ACC_1G and store values in EEPROM at end of calibration
+    // Calculate average, shift Z down by ACC_1G and
+    // store values in EEPROM at end of calibration
     if (calibratingA == 1) {
       global_conf.accZero[ROLL]  = (a[ROLL] + 256) >> 9;
       global_conf.accZero[PITCH] = (a[PITCH] + 256) >> 9;
@@ -251,13 +234,13 @@ void ACCCommon() {
   imu.accADC[PITCH] -=  global_conf.accZero[PITCH];
   imu.accADC[YAW]   -=  global_conf.accZero[YAW] ;
 
-  #if defined(SENSORS_TILT_45DEG_LEFT)
+  #ifdef SENSORS_TILT_45DEG_LEFT
     int16_t temp = ((imu.accADC[PITCH] - imu.accADC[ROLL] ) * 7) / 10;
     imu.accADC[ROLL] = ((imu.accADC[ROLL] + imu.accADC[PITCH]) * 7) / 10;
     imu.accADC[PITCH] = temp;
   #endif
 
-  #if defined(SENSORS_TILT_45DEG_RIGHT)
+  #ifdef SENSORS_TILT_45DEG_RIGHT
     int16_t temp = ((imu.accADC[PITCH] + imu.accADC[ROLL] ) * 7) / 10;
     imu.accADC[ROLL] = ((imu.accADC[ROLL] - imu.accADC[PITCH]) * 7) / 10;
     imu.accADC[PITCH] = temp;
@@ -265,9 +248,8 @@ void ACCCommon() {
 }
 
 
-// > I2C GYROSCOPE AND ACCELEROMETER MPU6050
 #ifdef MPU6050
-  void Gyro_init() {
+  void gyroInit() {
     // change the I2C clock rate to 400kHz
     TWBR = ((F_CPU / 400000L) - 16) / 2;
 
@@ -283,34 +265,34 @@ void ACCCommon() {
     // CONFIG
     // EXT_SYNC_SET 0 (disable input pin for data sync) ;
     // default DLPF_CFG = 0 => ACC bandwidth = 260Hz  GYRO bandwidth = 256Hz)
-    i2cWriteReg(MPU6050_ADDRESS, 0x1A, MPU6050_DLPF_CFG);
+    i2cWriteReg(MPU6050_ADDRESS, 0x1A, MPU6050_LPF_CFG);
 
     // GYRO_CONFIG
     // FS_SEL = 3: Full scale set to 2000 deg/sec
     i2cWriteReg(MPU6050_ADDRESS, 0x1B, 0x18);
   }
 
-  void GyroGetADC () {
+  void gyroGetADC () {
     i2cGetSixRawADC(MPU6050_ADDRESS, 0x43);
     // range: +/- 8192; +/- 2000 deg/sec
     GYRO_ORIENTATION( ((rawADC[0] << 8) | rawADC[1]) >> 2 ,
                       ((rawADC[2] << 8) | rawADC[3]) >> 2 ,
                       ((rawADC[4] << 8) | rawADC[5]) >> 2 );
-    GYROCommon();
+    gyroCommon();
   }
 
-  void ACCInit () {
+  void accInit () {
     i2cWriteReg(MPU6050_ADDRESS, 0x1C, 0x10);
   }
 
-  void ACC_getADC () {
+  void accGetADC () {
     i2cGetSixRawADC(MPU6050_ADDRESS, 0x3B);
     ACC_ORIENTATION( ((rawADC[0] << 8) | rawADC[1]) >> 3 ,
                      ((rawADC[2] << 8) | rawADC[3]) >> 3 ,
                      ((rawADC[4] << 8) | rawADC[5]) >> 3 );
-    ACCCommon();
+    accCommon();
   }
-#endif /* I2C GYROSCOPE AND ACCELEROMETER MPU6050 */
+#endif
 
 
 void initSensors() {
@@ -319,7 +301,7 @@ void initSensors() {
   delay(100);
   i2cInit();
   delay(100);
-  Gyro_init();
-  ACCInit();
+  gyroInit();
+  accInit();
   f.I2C_INIT_DONE = 1;
 }

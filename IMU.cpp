@@ -16,12 +16,12 @@ void computeIMU () {
   static uint32_t timeInterleave = 0;
 
   #if ACC
-    ACC_getADC();
+    accGetADC();
     getEstimatedAttitude();
   #endif
 
   #if GYRO
-    GyroGetADC();
+    gyroGetADC();
   #endif
 
   for (axis = 0; axis < 3; axis++)
@@ -34,7 +34,7 @@ void computeIMU () {
   while((uint16_t)(micros()-timeInterleave)<650) t=1;
   if (!t) annex650_overrun_count++;
   #if GYRO
-    GyroGetADC();
+    gyroGetADC();
   #endif
   for (axis = 0; axis < 3; axis++) {
     gyroADCinter[axis] =  imu.gyroADC[axis]+gyroADCp[axis];
