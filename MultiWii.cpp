@@ -421,12 +421,6 @@ void annexCode() {
 
 // > SETUP
 void setup() {
-  // LEDPIN_PINMODE;
-  // POWERPIN_PINMODE;
-  // BUZZERPIN_PINMODE;
-  // STABLEPIN_PINMODE;
-  // POWERPIN_OFF;
-
   SerialOpen(0,SERIAL0_COM_SPEED);
   initOutput();
   readGlobalSet();

@@ -21,7 +21,7 @@ void computeIMU () {
   #endif
 
   #if GYRO
-    Gyro_getADC();
+    GyroGetADC();
   #endif
 
   for (axis = 0; axis < 3; axis++)
@@ -34,7 +34,7 @@ void computeIMU () {
   while((uint16_t)(micros()-timeInterleave)<650) t=1;
   if (!t) annex650_overrun_count++;
   #if GYRO
-    Gyro_getADC();
+    GyroGetADC();
   #endif
   for (axis = 0; axis < 3; axis++) {
     gyroADCinter[axis] =  imu.gyroADC[axis]+gyroADCp[axis];
