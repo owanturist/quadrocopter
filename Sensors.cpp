@@ -40,7 +40,7 @@ void accInit();
 
 // > I2C ADDRESS
 #ifndef MPU6050_ADDRESS
-  #define MPU6050_ADDRESS     0x68
+  #define MPU6050_ADDRESS 0x68
 #endif
 
 
