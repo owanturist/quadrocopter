@@ -3,7 +3,7 @@
 
 void readGlobalSet();
 bool readEEPROM();
-void update_constants();
+void updateConstants();
 void writeGlobalSet(uint8_t b);
 void writeParams(uint8_t b);
 void LoadDefaults();

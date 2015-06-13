@@ -1,21 +1,3 @@
-/*
-* TOC
-*
-* RC ALIAS
-* AUTOMATIC ACC OFFSET CALIBRATION
-* POWER METER
-* RC FUNCTIONS
-* MOTOR AND SERVO FUNCTIONS
-* EEPROM LAYOUT DEFINITION
-* GPS COMMON VARIABLES
-* SETUP
-* GO ARM
-* GO DISARM
-* LOOP
-* - sticks command handler
-* - pitch & roll & yaw pid
-*/
-
 #include <avr/io.h>
 
 #include "Arduino.h"
@@ -33,7 +15,7 @@
 
 #include <avr/pgmspace.h>
 
-// > RC ALIAS
+// rc alias
 const char pidnames[] PROGMEM =
   "ROLL;"
   "PITCH;"
@@ -211,7 +193,7 @@ int16_t  annex650_overrun_count = 0;
 
 
 
-// > AUTOMATIC ACC OFFSET CALIBRATION
+// automatic acc offset calibration
 #if defined(INFLIGHT_ACC_CALIBRATION)
   uint16_t InflightcalibratingA = 0;
   int16_t AccInflightCalibrationArmed;
@@ -220,11 +202,11 @@ int16_t  annex650_overrun_count = 0;
   uint16_t AccInflightCalibrationActive = 0;
 #endif
 
-// > POWER METER
+// power meter
 uint16_t intPowerTrigger1;
 
 
-// > RC FUNCTIONS
+// rc functions
 #define ROL_LO  (1<<(2*ROLL))
 #define ROL_CE  (3<<(2*ROLL))
 #define ROL_HI  (2<<(2*ROLL))
@@ -255,12 +237,12 @@ int16_t lookupPitchRollRC[5];
 int16_t lookupThrottleRC[11];
 
 
-// > MOTOR AND SERVO FUNCTIONS
+// motor and servo functions
 int16_t axisPID[3];
 int16_t motor[8];
 int16_t servo[8] = {1500,1500,1500,1500,1500,1500,1500,1000};
 
-// > EEPROM LAYOUT DEFINITION
+// eeprom layout definition
 static uint8_t dynP8[2], dynD8[2];
 
 global_conf_t global_conf;
@@ -268,7 +250,7 @@ global_conf_t global_conf;
 conf_t conf;
 
 
-// > GPS COMMON VARIABLES
+// gps common variables
 // the angles that must be applied for GPS correction
 int16_t  GPS_angle[2] = { 0, 0};
 int32_t  GPS_coord[2];
@@ -419,45 +401,30 @@ void annexCode() {
   }
 }
 
-// > SETUP
+// setup
 void setup() {
   SerialOpen(0,SERIAL0_COM_SPEED);
   initOutput();
   readGlobalSet();
 
-  #ifndef NO_FLASH_CHECK
-    #if defined(MEGA)
-      // only first ~64K for mega board due to
-      // pgm_read_byte limitation
-      uint16_t i = 65000;
-    #else
-      uint16_t i = 32000;
-    #endif
-
-    uint16_t flashsum = 0;
-    uint8_t pbyt;
-    while(i--) {
-      // calculate flash checksum
-      pbyt =  pgm_read_byte(i);
-      flashsum += pbyt;
-      flashsum ^= (pbyt<<8);
-    }
-  #endif
+  uint16_t flashsum = 0;
+  uint8_t pbyt, i;
+  while(i--) {
+    // calculate flash checksum
+    pbyt =  pgm_read_byte(i);
+    flashsum += pbyt;
+    flashsum ^= (pbyt<<8);
+  }
 
   global_conf.currentSet=0;
 
   // check settings integrity
   while(1) {
-    #ifndef NO_FLASH_CHECK
-      // check current setting integrity
-      if(readEEPROM()) {
-        // update constants if firmware is changed and integrity is OK
-        if(flashsum != global_conf.flashsum) update_constants();
-      }
-    #else
-      // check current setting integrity
-      readEEPROM();
-    #endif
+    // check current setting integrity
+    if(readEEPROM()) {
+      // update constants if firmware is changed and integrity is OK
+      if(flashsum != global_conf.flashsum) updateConstants();
+    }
     // all checks is done
     if(global_conf.currentSet == 0) break;
     // next setting for check
@@ -467,14 +434,12 @@ void setup() {
   // reload global settings for get last profile number
   readGlobalSet();
 
-  #ifndef NO_FLASH_CHECK
-    if(flashsum != global_conf.flashsum) {
-      // new flash sum
-      global_conf.flashsum = flashsum;
-      // update flash sum in global config
-      writeGlobalSet(1);
-    }
-  #endif
+  if(flashsum != global_conf.flashsum) {
+    // new flash sum
+    global_conf.flashsum = flashsum;
+    // update flash sum in global config
+    writeGlobalSet(1);
+  }
 
   readEEPROM();  // load setting data from last used profile
   configureReceiver();
@@ -491,13 +456,9 @@ void setup() {
   debugmsg_append_str("initialization completed\n");
 }
 
-// > GO ARM
+// go arm
 void go_arm() {
-  if(calibratingG == 0
-  #if defined(ONLYARMWHENFLAT)
-    && f.ACC_CALIBRATED 
-  #endif
-    ) {
+  if(calibratingG == 0) {
     if(!f.ARMED && !f.BARO_MODE) { // arm now!
       f.ARMED = 1;
       headFreeModeHold = att.heading;
@@ -506,14 +467,14 @@ void go_arm() {
   }
 }
 
-// > GO DISARM
+// go disarm
 void go_disarm() {
   if (f.ARMED) {
     f.ARMED = 0;
   }
 }
 
-// > LOOP
+// loop
 void loop () {
   // this indicates the number of time
   // (multiple of RC measurement at 50Hz)
@@ -554,7 +515,7 @@ void loop () {
     rcTime = currentTime + 20000;
     computeRC();
 
-    // >> sticks command handler
+    // sticks command handler
     // checking sticks positions
     uint8_t stTmp = 0;
     for(i=0;i<4;i++) {
@@ -587,12 +548,6 @@ void loop () {
         // GYRO calibration
         if (rcSticks == THR_LO + YAW_LO + PIT_LO + ROL_CE) {
           calibratingG=512;
-
-          #if BARO
-            // calibrate baro to new ground
-            // level (10 * 25 ms = ~250 ms non blocking)
-            calibratingB=10;
-          #endif
         }
 
         else if (conf.activate[BOXARM] == 0 &&
@@ -603,11 +558,6 @@ void loop () {
         #if ACC
           else if (rcSticks == THR_HI + YAW_LO + PIT_LO + ROL_CE) {
             calibratingA=512;  // throttle=max, yaw=left, pitch=min
-          }
-        #endif
-        #if MAG
-          else if (rcSticks == THR_HI + YAW_HI + PIT_LO + ROL_CE) {
-            f.CALIBRATE_MAG = 1;  // throttle=max, yaw=right, pitch=min
           }
         #endif
 
@@ -664,72 +614,6 @@ void loop () {
     #endif
 
     if (rcOptions[BOXARM] == 0) f.OK_TO_ARM = 1;
-
-    #if BARO
-      #if (!defined(SUPPRESS_BARO_ALTHOLD))
-        if (rcOptions[BOXBARO]) {
-          if (!f.BARO_MODE) {
-            f.BARO_MODE = 1;
-            AltHold = alt.EstAlt;
-            initialThrottleHold = rcCommand[THROTTLE];
-            errorAltitudeI = 0;
-            BaroPID=0;
-          }
-        } else {
-          f.BARO_MODE = 0;
-        }
-      #endif
-    #endif
-
-    #if MAG
-      if (rcOptions[BOXMAG]) {
-        if (!f.MAG_MODE) {
-          f.MAG_MODE = 1;
-          magHold = att.heading;
-        }
-      } else {
-        f.MAG_MODE = 0;
-      }
-      if (rcOptions[BOXHEADFREE]) {
-        if (!f.HEADFREE_MODE) {
-          f.HEADFREE_MODE = 1;
-        }
-      } else {
-        f.HEADFREE_MODE = 0;
-      }
-      if (rcOptions[BOXHEADADJ]) {
-        headFreeModeHold = att.heading; // acquire new heading
-      }
-    #endif
-
-  } else { // not in rc loop
-    // never call all functions in the same loop, to avoid high delay spikes
-    static uint8_t taskOrder=0;
-
-    if(taskOrder>4) taskOrder-=5;
-    switch (taskOrder) {
-      case 0:
-        taskOrder++;
-        #if MAG
-          // max 350 µs (HMC5883) // only break when we actually did something
-          if (Mag_getADC()) break;
-        #endif
-      case 1:
-        taskOrder++;
-        #if BARO
-          if (Baro_update() != 0 ) break;
-        #endif
-      case 2:
-        taskOrder++;
-        #if BARO
-          if (getEstimatedAltitude() !=0) break;
-        #endif
-      case 3:
-        taskOrder++;
-      case 4:
-        taskOrder++;
-        break;
-    }
   }
  
   computeIMU();
@@ -739,55 +623,7 @@ void loop () {
   cycleTime = currentTime - previousTime;
   previousTime = currentTime;
 
-  #if MAG
-    if (abs(rcCommand[YAW]) <70 && f.MAG_MODE) {
-      int16_t dif = att.heading - magHold;
-      if (dif <= - 180) dif += 360;
-      if (dif >= + 180) dif -= 360;
-      if ( f.SMALL_ANGLES_25 ) rcCommand[YAW] -= dif*conf.pid[PIDMAG].P8>>5;
-    } else magHold = att.heading;
-  #endif
-
-  #if BARO && (!defined(SUPPRESS_BARO_ALTHOLD))
-    /**
-     * Smooth alt change routine , for slow auto and aerophoto
-     * modes(in general solution from alexmos). It's slowly 
-     * increase/decrease altitude proportional to stick movement
-     * (+/-100 throttle gives about +/-50 cm in 1 second with
-     * cycle time about 3-4ms)
-     */
-    if (f.BARO_MODE) {
-      static uint8_t isAltHoldChanged = 0;
-      static int16_t AltHoldCorr = 0;
-      if (abs(rcCommand[THROTTLE]-initialThrottleHold)
-          >ALT_HOLD_THROTTLE_NEUTRAL_ZONE) {
-        /**
-         * Slowly increase/decrease AltHold proportional
-         * to stick movement ( +100 throttle gives ~ +50 cm
-         * in 1 second with cycle time about 3-4ms)
-         */
-        AltHoldCorr+= rcCommand[THROTTLE] - initialThrottleHold;
-        if(abs(AltHoldCorr) > 512) {
-          AltHold += AltHoldCorr/512;
-          AltHoldCorr %= 512;
-        }
-        isAltHoldChanged = 1;
-      } else if (isAltHoldChanged) {
-        AltHold = alt.EstAlt;
-        isAltHoldChanged = 0;
-      }
-      rcCommand[THROTTLE] = initialThrottleHold + BaroPID;
-    }
-  #endif
-
-  #if defined(THROTTLE_ANGLE_CORRECTION)
-    if(f.ANGLE_MODE || f.HORIZON_MODE) {
-       rcCommand[THROTTLE]+= throttleAngleCorrection;
-    }
-  #endif
-
-
-  // >> pitch & roll & yaw pid
+  // pitch & roll & yaw pid
   #if PID_CONTROLLER == 1 // evolved oldschool
     if ( f.HORIZON_MODE ) {
       prop = min(max(abs(rcCommand[PITCH]),abs(rcCommand[ROLL])),512);
