@@ -912,7 +912,7 @@
     //#define MOTOR_STOP
 
     /* some radios have not a neutral point centered on 1500. can be changed here */
-    #define MIDRC 1485
+    #define MIDRC 1500
 
   /***********************         Servo Refreshrates            ***********************/
     /* Default 50Hz Servo refresh rate*/
