@@ -1,9 +1,3 @@
-/*
-* TOC
-*
-* MULTIWII SERIAL PROTOCOL
-*/
-
 #include "Arduino.h"
 #include "config.h"
 #include "def.h"
@@ -15,7 +9,7 @@
 #include "Protocol.h"
 #include "RX.h"
 
-// > MULTIWII SERIAL PROTOCOL
+// MULTIWII SERIAL PROTOCOL
 // Multiwii Serial Protocol 0 
 #define MSP_VERSION 0
 
@@ -126,35 +120,37 @@ void evaluateCommand();
 #define BIND_CAPABLE 0;
 // Capability is bit flags; next defines should be 2, 4, 8...
 
-const uint32_t capability = 0+BIND_CAPABLE;
+const uint32_t capability = 0 + BIND_CAPABLE;
 
-uint8_t read8()  {
+uint8_t read8() {
   return inBuf[indRX[CURRENTPORT]++][CURRENTPORT]&0xff;
 }
+
 uint16_t read16() {
   uint16_t t = read8();
-  t+= (uint16_t)read8()<<8;
+  t += (uint16_t)read8() << 8;
   return t;
 }
+
 uint32_t read32() {
   uint32_t t = read16();
-  t+= (uint32_t)read16()<<16;
+  t += (uint32_t)read16() << 16;
   return t;
 }
 
 void serialize8(uint8_t a) {
-  SerialSerialize(CURRENTPORT,a);
+  SerialSerialize(CURRENTPORT, a);
   checksum[CURRENTPORT] ^= a;
 }
 void serialize16(int16_t a) {
-  serialize8((a   ) & 0xFF);
-  serialize8((a>>8) & 0xFF);
+  serialize8((a     ) & 0xFF);
+  serialize8((a >> 8) & 0xFF);
 }
 void serialize32(uint32_t a) {
-  serialize8((a    ) & 0xFF);
-  serialize8((a>> 8) & 0xFF);
-  serialize8((a>>16) & 0xFF);
-  serialize8((a>>24) & 0xFF);
+  serialize8((a      ) & 0xFF);
+  serialize8((a >>  8) & 0xFF);
+  serialize8((a >> 16) & 0xFF);
+  serialize8((a >> 24) & 0xFF);
 }
 
 void headSerialResponse(uint8_t err, uint8_t s) {
@@ -198,7 +194,7 @@ void serialCom() {
     HEADER_CMD,
   } c_state[UART_NUMBER];// = IDLE;
 
-  for(n=0;n<UART_NUMBER;n++) {
+  for(n=0; n < UART_NUMBER; n++) {
     #define GPS_COND
     #define SPEK_COND
     #define SBUS_COND
@@ -232,10 +228,12 @@ void serialCom() {
         cmdMSP[CURRENTPORT] = c;
         checksum[CURRENTPORT] ^= c;
         c_state[CURRENTPORT] = HEADER_CMD;
-      } else if (c_state[CURRENTPORT] == HEADER_CMD && offset[CURRENTPORT] < dataSize[CURRENTPORT]) {
+      } else if (c_state[CURRENTPORT] == HEADER_CMD
+                && offset[CURRENTPORT] < dataSize[CURRENTPORT]) {
         checksum[CURRENTPORT] ^= c;
         inBuf[offset[CURRENTPORT]++][CURRENTPORT] = c;
-      } else if (c_state[CURRENTPORT] == HEADER_CMD && offset[CURRENTPORT] >= dataSize[CURRENTPORT]) {
+      } else if (c_state[CURRENTPORT] == HEADER_CMD
+                 && offset[CURRENTPORT] >= dataSize[CURRENTPORT]) {
         // compare calculated and transferred checksum
         if (checksum[CURRENTPORT] == c) {
           evaluateCommand();  // we got a valid packet, evaluate it
@@ -247,7 +245,7 @@ void serialCom() {
   }
 }
 
-void  s_struct(uint8_t *cb,uint8_t siz) {
+void s_struct(uint8_t *cb,uint8_t siz) {
   headSerialReply(siz);
   while(siz--) serialize8(*cb++);
 }
@@ -258,24 +256,24 @@ void s_struct_w(uint8_t *cb,uint8_t siz) {
 }
 
 void evaluateCommand() {
-  uint32_t tmp=0; 
+  uint32_t tmp=0;
 
   switch(cmdMSP[CURRENTPORT]) {
    case MSP_SET_RAW_RC:
-     s_struct_w((uint8_t*)&rcSerial,16);
+     s_struct_w((uint8_t*)&rcSerial, 16);
      rcSerialCount = 50; // 1s transition 
      break;
 
    case MSP_SET_PID:
-     s_struct_w((uint8_t*)&conf.pid[0].P8,3*PIDITEMS);
+     s_struct_w((uint8_t*)&conf.pid[0].P8, 3 * PIDITEMS);
      break;
 
    case MSP_SET_BOX:
-     s_struct_w((uint8_t*)&conf.activate[0],CHECKBOXITEMS*2);
+     s_struct_w((uint8_t*)&conf.activate[0], CHECKBOXITEMS * 2);
      break;
 
    case MSP_SET_RC_TUNING:
-     s_struct_w((uint8_t*)&conf.rcRate8,7);
+     s_struct_w((uint8_t*)&conf.rcRate8, 7);
      break;
 
    case MSP_SET_MISC:
@@ -285,11 +283,8 @@ void evaluateCommand() {
        uint16_t h;
        uint8_t  i,j,k,l;
      } set_misc;
-     s_struct_w((uint8_t*)&set_misc,22);
+     s_struct_w((uint8_t*)&set_misc, 22);
      conf.minthrottle = set_misc.b;
-     #ifdef FAILSAFE 
-       conf.failsafe_throttle = set_misc.e;
-     #endif
      break;
 
    case MSP_MISC:
@@ -303,19 +298,15 @@ void evaluateCommand() {
      misc.b = conf.minthrottle;
      misc.c = MAXTHROTTLE;
      misc.d = MINCOMMAND;
-     #ifdef FAILSAFE 
-       misc.e = conf.failsafe_throttle;
-     #else  
-       misc.e = 0;
-     #endif
+     misc.e = 0;
      misc.f = 0; misc.g =0;
      misc.h = 0;
      misc.i = 0;misc.j = 0;misc.k = 0;misc.l = 0;
-     s_struct((uint8_t*)&misc,22);
+     s_struct((uint8_t*)&misc, 22);
      break;
 
    case MSP_SET_HEAD:
-     s_struct_w((uint8_t*)&magHold,2);
+     s_struct_w((uint8_t*)&magHold, 2);
      break;
 
    case MSP_IDENT:
@@ -326,8 +317,8 @@ void evaluateCommand() {
      id.v     = VERSION;
      id.t     = MULTITYPE;
      id.msp_v = MSP_VERSION;
-     id.cap   = capability|DYNBAL<<2|FLAP<<3;
-     s_struct((uint8_t*)&id,7);
+     id.cap   = capability | DYNBAL << 2 | FLAP << 3;
+     s_struct((uint8_t*)&id, 7);
      break;
 
    case MSP_STATUS:
@@ -338,59 +329,59 @@ void evaluateCommand() {
      } st;
      st.cycleTime        = cycleTime;
      st.i2c_errors_count = i2c_errors_count;
-     st.sensor           = ACC|BARO<<1|MAG<<2|GPS<<3|SONAR<<4;
+     st.sensor           = ACC | BARO << 1 | MAG << 2 | GPS << 3 | SONAR << 4;
      #if ACC
-       if(f.ANGLE_MODE)   tmp |= 1<<BOXANGLE;
-       if(f.HORIZON_MODE) tmp |= 1<<BOXHORIZON;
+       if(f.ANGLE_MODE)   tmp |= 1 << BOXANGLE;
+       if(f.HORIZON_MODE) tmp |= 1 << BOXHORIZON;
      #endif
      if(f.ARMED) tmp |= 1<<BOXARM;
      st.flag             = tmp;
      st.set              = global_conf.currentSet;
-     s_struct((uint8_t*)&st,11);
+     s_struct((uint8_t*)&st, 11);
      break;
 
    case MSP_RAW_IMU:
-     s_struct((uint8_t*)&imu,18);
+     s_struct((uint8_t*)&imu, 18);
      break;
 
    case MSP_SERVO:
-     s_struct((uint8_t*)&servo,16);
+     s_struct((uint8_t*)&servo, 16);
      break;
 
    case MSP_SERVO_CONF:
-     s_struct((uint8_t*)&conf.servoConf[0].min,56);
+     s_struct((uint8_t*)&conf.servoConf[0].min, 56);
      break;
 
    case MSP_SET_SERVO_CONF:
-     s_struct_w((uint8_t*)&conf.servoConf[0].min,56);
+     s_struct_w((uint8_t*)&conf.servoConf[0].min, 56);
      break;
 
    case MSP_MOTOR:
-     s_struct((uint8_t*)&motor,16);
+     s_struct((uint8_t*)&motor, 16);
      break;
 
    case MSP_RC:
-     s_struct((uint8_t*)&rcData,RC_CHANS*2);
+     s_struct((uint8_t*)&rcData,RC_CHANS * 2);
      break;
 
    case MSP_ATTITUDE:
-     s_struct((uint8_t*)&att,6);
+     s_struct((uint8_t*)&att, 6);
      break;
 
    case MSP_ALTITUDE:
-     s_struct((uint8_t*)&alt,6);
+     s_struct((uint8_t*)&alt, 6);
      break;
 
    case MSP_ANALOG:
-     s_struct((uint8_t*)&analog,7);
+     s_struct((uint8_t*)&analog, 7);
      break;
 
    case MSP_RC_TUNING:
-     s_struct((uint8_t*)&conf.rcRate8,7);
+     s_struct((uint8_t*)&conf.rcRate8, 7);
      break;
 
    case MSP_PID:
-     s_struct((uint8_t*)&conf.pid[0].P8,3*PIDITEMS);
+     s_struct((uint8_t*)&conf.pid[0].P8, 3 * PIDITEMS);
      break;
 
    case MSP_PIDNAMES:
@@ -398,7 +389,7 @@ void evaluateCommand() {
      break;
 
    case MSP_BOX:
-     s_struct((uint8_t*)&conf.activate[0],2*CHECKBOXITEMS);
+     s_struct((uint8_t*)&conf.activate[0], 2 * CHECKBOXITEMS);
      break;
 
    case MSP_BOXNAMES:
@@ -407,13 +398,13 @@ void evaluateCommand() {
 
    case MSP_BOXIDS:
      headSerialReply(CHECKBOXITEMS);
-     for(uint8_t i=0;i<CHECKBOXITEMS;i++) {
+     for(uint8_t i=0; i < CHECKBOXITEMS; i++) {
        serialize8(pgm_read_byte(&(boxids[i])));
      }
      break;
 
    case MSP_MOTOR_PINS:
-     s_struct((uint8_t*)&PWM_PIN,8);
+     s_struct((uint8_t*)&PWM_PIN, 8);
      break;
 
    case MSP_RESET_CONF:
@@ -422,7 +413,7 @@ void evaluateCommand() {
      break;
 
    case MSP_ACC_CALIBRATION:
-     if(!f.ARMED) calibratingA=512;
+     if(!f.ARMED) calibratingA = 512;
      headSerialReply(0);
      break;
 
@@ -437,7 +428,7 @@ void evaluateCommand() {
      break;
 
    case MSP_DEBUG:
-     s_struct((uint8_t*)&debug,8);
+     s_struct((uint8_t*)&debug, 8);
      break;
 
    default:
