@@ -191,13 +191,12 @@ void gyroCommon() {
     previousGyroADC[axis] = imu.gyroADC[axis];
   }
 
-  #ifdef SENSORS_TILT_45DEG_LEFT
+  #if   defined(SENSORS_TILT_45DEG_LEFT)
     int16_t temp = ((imu.gyroADC[PITCH] - imu.gyroADC[ROLL] ) * 7) / 10;
     imu.gyroADC[ROLL] = ((imu.gyroADC[ROLL] + imu.gyroADC[PITCH]) * 7) / 10;
     imu.gyroADC[PITCH] = temp;
-  #endif
 
-  #ifdef SENSORS_TILT_45DEG_RIGHT
+  #elif defined(SENSORS_TILT_45DEG_RIGHT)
     int16_t temp = ((imu.gyroADC[PITCH] + imu.gyroADC[ROLL] ) * 7) / 10;
     imu.gyroADC[ROLL] = ((imu.gyroADC[ROLL] - imu.gyroADC[PITCH]) * 7) / 10;
     imu.gyroADC[PITCH] = temp;

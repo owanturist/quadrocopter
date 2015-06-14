@@ -348,14 +348,6 @@ void evaluateCommand() {
      s_struct((uint8_t*)&servo, 16);
      break;
 
-   case MSP_SERVO_CONF:
-     s_struct((uint8_t*)&conf.servoConf[0].min, 56);
-     break;
-
-   case MSP_SET_SERVO_CONF:
-     s_struct_w((uint8_t*)&conf.servoConf[0].min, 56);
-     break;
-
    case MSP_MOTOR:
      s_struct((uint8_t*)&motor, 16);
      break;

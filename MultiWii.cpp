@@ -150,7 +150,6 @@ uint16_t calibratingG;
 // [-180;+180]
 int16_t  magHold,headFreeModeHold;
 // lowest battery voltage in 0.1V steps
-uint8_t  vbatMin = VBATNOMINAL;
 uint8_t  rcOptions[CHECKBOXITEMS];
 // in cm
 int32_t  AltHold;
@@ -378,27 +377,7 @@ void annexCode() {
   //Only one serial port on ProMini.
   //Skip serial com if Spektrum Sat in use.
   //Note: Spek code will auto-call serialCom if GUI data detected on serial0.
-  #if !(defined(SPEKTRUM) && defined(PROMINI))
-    serialCom();
-  #endif
-
-
-  if (f.ARMED)  {
-    #if defined(LCD_TELEMETRY) || defined(ARMEDTIMEWARNING) || defined(LOG_PERMANENT)
-      armedTime += (uint32_t)cycleTime;
-    #endif
-    #if defined(VBAT)
-      if ( (analog.vbat > NO_VBAT) && (analog.vbat < vbatMin) ) vbatMin = analog.vbat;
-    #endif
-    #ifdef LCD_TELEMETRY
-      #if BARO
-        if ( (alt.EstAlt > BAROaltMax) ) BAROaltMax = alt.EstAlt;
-      #endif
-      #if GPS
-        if ( (GPS_speed > GPS_speedMax) ) GPS_speedMax = GPS_speed;
-      #endif
-    #endif
-  }
+  serialCom();
 }
 
 // setup

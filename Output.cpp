@@ -42,10 +42,10 @@ void initOutput() {
   }
 
   // Specific PWM Timers & Registers for the atmega328P (Promini)
-  TCCR1A |= _BV(COM1A1);  // connect pin 9 to timer 1 channel A
+  TCCR1A |= _BV(COM1A1);  // connect pin  9 to timer 1 channel A
   TCCR1A |= _BV(COM1B1);  // connect pin 10 to timer 1 channel B
   TCCR2A |= _BV(COM2A1);  // connect pin 11 to timer 2 channel A
-  TCCR2A |= _BV(COM2B1);  // connect pin 3 to timer 2 channel B
+  TCCR2A |= _BV(COM2B1);  // connect pin  3 to timer 2 channel B
 
   // special version of MultiWii to calibrate all attached ESCs
   #ifdef ESC_CALIB_CANNOT_FLY
@@ -72,15 +72,15 @@ void mixTable() {
                         YAW_DIRECTION * axisPID[YAW] * Z
 
   #if defined(QUADP)
-    motor[0] = PIDMIX( 0,+1,-1); //REAR
-    motor[1] = PIDMIX(-1, 0,+1); //RIGHT
-    motor[2] = PIDMIX(+1, 0,+1); //LEFT
-    motor[3] = PIDMIX( 0,-1,-1); //FRONT
+    motor[0] = PIDMIX( 0,+1,-1); // REAR
+    motor[1] = PIDMIX(-1, 0,+1); // RIGHT
+    motor[2] = PIDMIX(+1, 0,+1); // LEFT
+    motor[3] = PIDMIX( 0,-1,-1); // FRONT
   #elif defined(QUADX)
-    motor[0] = PIDMIX(-1,+1,-1); //REAR_R
-    motor[1] = PIDMIX(-1,-1,+1); //FRONT_R
-    motor[2] = PIDMIX(+1,+1,+1); //REAR_L
-    motor[3] = PIDMIX(+1,-1,-1); //FRONT_L
+    motor[0] = PIDMIX(-1,+1,-1); // REAR_R
+    motor[1] = PIDMIX(-1,-1,+1); // FRONT_R
+    motor[2] = PIDMIX(+1,+1,+1); // REAR_L
+    motor[3] = PIDMIX(+1,-1,-1); // FRONT_L
   #else
     #error "missing coptertype mixtable entry"
   #endif
@@ -93,7 +93,7 @@ void mixTable() {
     }
   }
 
-  for(i=0; i< NUMBER_MOTOR; i++) {
+  for(i=0; i < NUMBER_MOTOR; i++) {
     // this is a way to still have good gyro
     // corrections if at least one motor reaches its max.
     if (maxMotor > MAXTHROTTLE) {
