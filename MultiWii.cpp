@@ -437,12 +437,10 @@ void setup() {
 
 // go arm
 void go_arm() {
-  if(calibratingG == 0) {
-    if(!f.ARMED && !f.BARO_MODE) { // arm now!
-      f.ARMED = 1;
-      headFreeModeHold = att.heading;
-      magHold = att.heading;
-    }
+  if(calibratingG == 0 && !f.ARMED) { // arm now!
+    f.ARMED = 1;
+    headFreeModeHold = att.heading;
+    magHold = att.heading;
   }
 }
 

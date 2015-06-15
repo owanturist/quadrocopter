@@ -1,14 +1,3 @@
-/*
-* TOC
-*
-* BOARD ORIENTATION AND SETUP
-* I2C ADDRESS
-* MPU6050 GYRO LPF SETTING
-* I2C GENERAL FUNCTIONS
-* GYRO COMMON PART
-* ACC COMMON PART
-*/
-
 #include "Arduino.h"
 #include "config.h"
 #include "def.h"
@@ -20,7 +9,7 @@
 void i2cWaitTransmission();
 void accInit();
 
-// > BOARD ORIENTATION AND SETUP
+// board orientation and setup
 #ifndef ACC_ORIENTATION
   #define ACC_ORIENTATION(X, Y, Z) { \
     imu.accADC[ROLL]  = X;           \
@@ -38,13 +27,13 @@ void accInit();
 #endif
 
 
-// > I2C ADDRESS
+// i2c address
 #ifndef MPU6050_ADDRESS
   #define MPU6050_ADDRESS 0x68
 #endif
 
 
-// > MPU6050 GYRO LPF SETTING
+// mpu6050 gyro lpf setting
 #if   defined(MPU6050_LPF_256HZ)
   #define MPU6050_LPF_CFG 0
 #elif defined(MPU6050_LPF_188HZ)
@@ -68,7 +57,7 @@ uint8_t rawADC[6];
 static uint32_t neutralizeTime = 0;
 
 
-// > I2C GENERAL FUNCTIONS
+// i2c general functions
 void i2cInit(void) {
   // change the I2C clock rate
   TWBR = ((F_CPU / I2C_SPEED) - 16) / 2;
@@ -157,7 +146,7 @@ void i2cWriteReg(uint8_t add, uint8_t reg, uint8_t val) {
 }
 
 
-// > GYRO COMMON PART
+// gyro common part
 void gyroCommon() {
   static int16_t previousGyroADC[3] = {0,0,0};
   static int32_t g[3];
@@ -204,7 +193,7 @@ void gyroCommon() {
 }
 
 
-// > ACC COMMON PART
+// acc common part
 void accCommon() {
   static int32_t a[3];
   if (calibratingA > 0) {

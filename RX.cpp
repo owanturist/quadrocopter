@@ -52,8 +52,10 @@ void configureReceiver() {
   }
 
 // PORT CHANGE INTERRUPT
-// this ISR is common to every receiver channel,
-// it is call everytime a change state occurs on a RX input pin
+/**
+ * this ISR is common to every receiver channel,
+ * it is call everytime a changestate occurs on a RX input pin
+ */
 ISR(RX_PC_INTERRUPT) {
   uint8_t mask;
   uint8_t pin;

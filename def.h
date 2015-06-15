@@ -13,9 +13,9 @@
 
 
 // motor and servo numbers
-#define DYNBAL          0
-#define FLAP            0
-#define NUMBER_MOTOR    4
+#if defined(QUADP) || defined(QUADX)
+  #define NUMBER_MOTOR 4
+#endif
 
 
 // atmega328P (Promini)
@@ -127,7 +127,7 @@
 #endif
 
 // Multitype decleration for the GUI's
-#if defined(QUADP)
+#if   defined(QUADP)
   #define MULTITYPE 2
 #elif defined(QUADX)
   #define MULTITYPE 3

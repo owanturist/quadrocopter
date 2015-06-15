@@ -317,7 +317,7 @@ void evaluateCommand() {
      id.v     = VERSION;
      id.t     = MULTITYPE;
      id.msp_v = MSP_VERSION;
-     id.cap   = capability | DYNBAL << 2 | FLAP << 3;
+     id.cap   = capability;
      s_struct((uint8_t*)&id, 7);
      break;
 

@@ -63,7 +63,7 @@ void computeIMU () {
 
     for (axis = 0; axis < 3; axis++) {
       smoothing = (int32_t)gyroSmooth[axis] * (conf.Smoothing[axis] - 1);
-      gyroData = (int32_t)(smoothing) + imu.gyroData[axis] + 1;
+      gyroData  = (int32_t)(smoothing) + imu.gyroData[axis] + 1;
       imu.gyroData[axis] = (int16_t)( gyroData / conf.Smoothing[axis]);
       gyroSmooth[axis] = imu.gyroData[axis];
     }
@@ -121,23 +121,17 @@ typedef union {
   t_int32_t_vector_def V;
 } t_int32_t_vector;
 
-int16_t _atan2(int32_t y, int32_t x){
+int16_t _atan2(int32_t y, int32_t x) {
   float z = (float)y / x;
   int16_t a;
   if (abs(y) < abs(x)) {
     a = 573 * z / (1.0f + 0.28f * z * z);
     if (x < 0) {
-      if (y < 0) {
-        a -= 1800;
-      } else {
-        a += 1800;
-      }
+      a += ((y > 0) * 2 - 1) * 1800;
     }
   } else {
     a = 900 - 573 * z / (z * z + 0.28f);
-    if (y < 0) {
-      a -= 1800;
-    }
+    a -= (y < 0) * 1800;
   }
   return a;
 }
@@ -212,12 +206,8 @@ void getEstimatedAttitude(){
     //int32_t cross calculation is a little bit faster than float
     EstG32.A[axis] = EstG.A[axis];
   }
-  
-  if ((int16_t)EstG32.A[2] > ACCZ_25deg) {
-    f.SMALL_ANGLES_25 = 1;
-  } else {
-    f.SMALL_ANGLES_25 = 0;
-  }
+
+  f.SMALL_ANGLES_25 = (int16_t)EstG32.A[2] > ACCZ_25deg;
 
   // Attitude of the estimated vector
   int32_t sqGX_sqGZ = sq(EstG32.V.X) + sq(EstG32.V.Z);

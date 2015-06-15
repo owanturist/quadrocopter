@@ -72,15 +72,15 @@ void mixTable() {
                         YAW_DIRECTION * axisPID[YAW] * Z
 
   #if defined(QUADP)
-    motor[0] = PIDMIX( 0,+1,-1); // REAR
-    motor[1] = PIDMIX(-1, 0,+1); // RIGHT
-    motor[2] = PIDMIX(+1, 0,+1); // LEFT
-    motor[3] = PIDMIX( 0,-1,-1); // FRONT
+    motor[0] = PIDMIX( 0,+1,-1);  // REAR
+    motor[1] = PIDMIX(-1, 0,+1);  // RIGHT
+    motor[2] = PIDMIX(+1, 0,+1);  // LEFT
+    motor[3] = PIDMIX( 0,-1,-1);  // FRONT
   #elif defined(QUADX)
-    motor[0] = PIDMIX(-1,+1,-1); // REAR_R
-    motor[1] = PIDMIX(-1,-1,+1); // FRONT_R
-    motor[2] = PIDMIX(+1,+1,+1); // REAR_L
-    motor[3] = PIDMIX(+1,-1,-1); // FRONT_L
+    motor[0] = PIDMIX(-1,+1,-1);  // REAR_R
+    motor[1] = PIDMIX(-1,-1,+1);  // FRONT_R
+    motor[2] = PIDMIX(+1,+1,+1);  // REAR_L
+    motor[3] = PIDMIX(+1,-1,-1);  // FRONT_L
   #else
     #error "missing coptertype mixtable entry"
   #endif
