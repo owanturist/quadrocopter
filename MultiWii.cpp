@@ -592,7 +592,7 @@ void loop () {
 
     if (rcOptions[BOXARM] == 0) f.OK_TO_ARM = 1;
   }
- 
+
   computeIMU();
 
   // Measure loop rate just afer reading the sensors

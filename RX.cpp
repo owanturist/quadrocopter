@@ -19,7 +19,7 @@ volatile uint16_t rcValue[RC_CHANS] = {
 // Standard Channel order
 static uint8_t rcChannel[RC_CHANS]  = {   \
   ROLLPIN, PITCHPIN, YAWPIN, THROTTLEPIN, \
-  AUX1PIN,AUX2PIN,AUX3PIN,AUX4PIN         \
+  AUX1PIN, AUX2PIN, AUX3PIN, AUX4PIN      \
 };
 
 // if this slowes the PCINT readings we'
@@ -113,7 +113,8 @@ ISR(RX_PC_INTERRUPT) {
 uint16_t readRawRC(uint8_t chan) {
   uint16_t data;
   uint8_t oldSREG;
-  oldSREG = SREG; cli();              // Let's disable interrupts
+  oldSREG = SREG;                     // Save Status REGister
+  cli();                              // Let's disable interrupts
   data = rcValue[rcChannel[chan]];    // Let's copy the data Atomically
   SREG = oldSREG;                     // Let's restore interrupt state
   // We return the value correctly copied when the IRQ's where disabled

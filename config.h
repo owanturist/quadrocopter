@@ -22,7 +22,7 @@
   /////////////////////////////
 
   // THE TYPE OF MULTICOPTER
-  // #define QUADP
+  // #define QUADP    
   #define QUADX
 
   // MOTOR MINTHROTTLE
@@ -90,9 +90,6 @@
    */
   #define PID_CONTROLLER 1
 
-  /**
-   * not used anymore for servo coptertypes
-   */
   #define YAW_DIRECTION -1
 
 
